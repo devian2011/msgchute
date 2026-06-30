@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package provider;
+
+option go_package = "./;provider";
+
+message Empty {}
+
+message GetCodeResponse {
+  string code = 1;
+}
+
+message MessageRequest {
+  bytes params = 1;
+  repeated string to = 2;
+  bytes meta = 3;
+  string subject = 4;
+  string body = 5;
+}
+
+service ProviderService {
+  rpc GetCode(Empty) returns (GetCodeResponse);
+  rpc Send(MessageRequest) returns (Empty);
+}

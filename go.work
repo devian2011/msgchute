@@ -1,0 +1,8 @@
+go 1.25.10
+
+use (
+    ./app
+	./plugins/src/providers/smtp
+	./plugins/src/providers/telegram
+	./pkg/shared/provider
+)

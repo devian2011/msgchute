@@ -1,0 +1,27 @@
+http:
+  port: ${APP_HTTP_PORT}
+  tls:
+    cert: ${APP_HTTP_TLS_CERT}
+    key: ${APP_HTTP_TLS_KEY}
+app:
+  workers:
+    senders: 4
+  plugins:
+    providers: ./plugins/dist/providers
+db:
+  dsn: ${APP_DB_DSN}
+providers:
+  gmail:
+    provider: smtp
+    params:
+      host: smtp.gmail.com
+      port: 587
+      user: user
+      password: password
+      from: mail@example.com
+  tg:
+    provider: telegram
+    params:
+      token:
+  stdout:
+    provider: stdout
