@@ -6,19 +6,28 @@ option go_package = "./;provider";
 
 message Empty {}
 
-message GetCodeResponse {
-  string code = 1;
+message ConfigureRequest {
+  bytes params = 1;
 }
 
 message MessageRequest {
-  bytes params = 1;
-  repeated string to = 2;
-  bytes meta = 3;
-  string subject = 4;
-  string body = 5;
+  repeated string to = 1;
+  bytes params = 2;
+  string subject = 3;
+  string body = 4;
+}
+
+message Response {
+  string error = 1;
+}
+
+message MsgResponse {
+  string response = 1;
+  string error = 2;
+  bool isCritical = 3;
 }
 
 service ProviderService {
-  rpc GetCode(Empty) returns (GetCodeResponse);
-  rpc Send(MessageRequest) returns (Empty);
+  rpc Configure(ConfigureRequest) returns (Response);
+  rpc Send(MessageRequest) returns (MsgResponse);
 }

@@ -1,58 +1,58 @@
 package web
 
 import (
-	"encoding/json"
+	"context"
 	"net/http"
-
-	"github.com/valyala/fasthttp"
+	"time"
 )
 
 type Config struct {
-	Addr string `config:"addr"`
-	Tls  struct {
-		CertFile string `config:"cer"`
-		KeyFile  string `config:"key"`
-	} `config:"tls"`
+	Addr   string `env:"APP_HTTP_ADDR"`
+	Config struct {
+		ReadTimeout       time.Duration `env:"APP_HTTP_READ_TIMEOUT" yaml:"readTimeout"`
+		ReadHeaderTimeout time.Duration `env:"APP_HTTP_READ_HEAD_TIMEOUT" yaml:"readHeaderTimeout"`
+		WriteTimeout      time.Duration `env:"APP_HTTP_WRITE_TIMEOUT" yaml:"writeTimeout"`
+	} `yaml:"config"`
+	TLS struct {
+		CertFile string `env:"APP_HTTP_CERT_FILE" yaml:"certFile"`
+		KeyFile  string `env:"APP_HTTP_KEY_FILE" yaml:"keyFile"`
+	} `yaml:"tls"`
+	WithSwagger bool `env:"APP_HTTP_WITH_SWAGGER" yaml:"withSwagger"`
 }
-
-type Handler func(command []byte, body []byte) (interface{}, error)
 
 type Server struct {
 	cfg *Config
-	srv *fasthttp.Server
+	srv *http.Server
 }
 
-func NewServer(cfg *Config, fn Handler) *Server {
+func NewServer(cfg *Config) *Server {
 	return &Server{
 		cfg: cfg,
-		srv: &fasthttp.Server{
-			Handler: func(ctx *fasthttp.RequestCtx) {
-				data, err := fn(ctx.Path(), ctx.Request.Body())
-
-				ctx.SetStatusCode(http.StatusOK)
-				ctx.Response.Header.Add("Content-Type", "application/json")
-				json.NewEncoder(ctx.Response.BodyWriter()).Encode(struct {
-					Data  interface{} `json:"data"`
-					Error error       `json:"err"`
-				}{
-					Data:  data,
-					Error: err,
-				})
-			},
+		srv: &http.Server{
+			Addr:              cfg.Addr,
+			ReadTimeout:       cfg.Config.ReadTimeout,
+			ReadHeaderTimeout: cfg.Config.ReadHeaderTimeout,
+			WriteTimeout:      cfg.Config.WriteTimeout,
 		},
 	}
 }
 
-func (s *Server) Run(errCh chan error) {
-	go func() {
-		if s.cfg.Tls.CertFile != "" && s.cfg.Tls.KeyFile != "" {
-			errCh <- s.srv.ListenAndServeTLS(s.cfg.Addr, s.cfg.Tls.CertFile, s.cfg.Tls.KeyFile)
-		} else {
-			errCh <- s.srv.ListenAndServe(s.cfg.Addr)
-		}
-	}()
+func (s *Server) WithSwagger() bool {
+	return s.cfg.WithSwagger
 }
 
-func (s *Server) Shutdown() error {
-	return s.srv.Shutdown()
+func (s *Server) SetHandler(h http.Handler) {
+	s.srv.Handler = h
+}
+
+func (s *Server) Run(err chan error) {
+	if s.cfg.TLS.KeyFile != "" && s.cfg.TLS.CertFile != "" {
+		err <- s.srv.ListenAndServeTLS(s.cfg.TLS.CertFile, s.cfg.TLS.KeyFile)
+	} else {
+		err <- s.srv.ListenAndServe()
+	}
+}
+
+func (s *Server) Shutdown(ctx context.Context) error {
+	return s.srv.Shutdown(ctx)
 }

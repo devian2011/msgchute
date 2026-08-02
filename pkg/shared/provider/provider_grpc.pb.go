@@ -19,16 +19,16 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	ProviderService_GetCode_FullMethodName = "/provider.ProviderService/GetCode"
-	ProviderService_Send_FullMethodName    = "/provider.ProviderService/Send"
+	ProviderService_Configure_FullMethodName = "/provider.ProviderService/Configure"
+	ProviderService_Send_FullMethodName      = "/provider.ProviderService/Send"
 )
 
 // ProviderServiceClient is the client API for ProviderService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ProviderServiceClient interface {
-	GetCode(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*GetCodeResponse, error)
-	Send(ctx context.Context, in *MessageRequest, opts ...grpc.CallOption) (*Empty, error)
+	Configure(ctx context.Context, in *ConfigureRequest, opts ...grpc.CallOption) (*Response, error)
+	Send(ctx context.Context, in *MessageRequest, opts ...grpc.CallOption) (*MsgResponse, error)
 }
 
 type providerServiceClient struct {
@@ -39,19 +39,19 @@ func NewProviderServiceClient(cc grpc.ClientConnInterface) ProviderServiceClient
 	return &providerServiceClient{cc}
 }
 
-func (c *providerServiceClient) GetCode(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*GetCodeResponse, error) {
+func (c *providerServiceClient) Configure(ctx context.Context, in *ConfigureRequest, opts ...grpc.CallOption) (*Response, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetCodeResponse)
-	err := c.cc.Invoke(ctx, ProviderService_GetCode_FullMethodName, in, out, cOpts...)
+	out := new(Response)
+	err := c.cc.Invoke(ctx, ProviderService_Configure_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *providerServiceClient) Send(ctx context.Context, in *MessageRequest, opts ...grpc.CallOption) (*Empty, error) {
+func (c *providerServiceClient) Send(ctx context.Context, in *MessageRequest, opts ...grpc.CallOption) (*MsgResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Empty)
+	out := new(MsgResponse)
 	err := c.cc.Invoke(ctx, ProviderService_Send_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -63,8 +63,8 @@ func (c *providerServiceClient) Send(ctx context.Context, in *MessageRequest, op
 // All implementations must embed UnimplementedProviderServiceServer
 // for forward compatibility.
 type ProviderServiceServer interface {
-	GetCode(context.Context, *Empty) (*GetCodeResponse, error)
-	Send(context.Context, *MessageRequest) (*Empty, error)
+	Configure(context.Context, *ConfigureRequest) (*Response, error)
+	Send(context.Context, *MessageRequest) (*MsgResponse, error)
 	mustEmbedUnimplementedProviderServiceServer()
 }
 
@@ -75,10 +75,10 @@ type ProviderServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedProviderServiceServer struct{}
 
-func (UnimplementedProviderServiceServer) GetCode(context.Context, *Empty) (*GetCodeResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method GetCode not implemented")
+func (UnimplementedProviderServiceServer) Configure(context.Context, *ConfigureRequest) (*Response, error) {
+	return nil, status.Error(codes.Unimplemented, "method Configure not implemented")
 }
-func (UnimplementedProviderServiceServer) Send(context.Context, *MessageRequest) (*Empty, error) {
+func (UnimplementedProviderServiceServer) Send(context.Context, *MessageRequest) (*MsgResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Send not implemented")
 }
 func (UnimplementedProviderServiceServer) mustEmbedUnimplementedProviderServiceServer() {}
@@ -102,20 +102,20 @@ func RegisterProviderServiceServer(s grpc.ServiceRegistrar, srv ProviderServiceS
 	s.RegisterService(&ProviderService_ServiceDesc, srv)
 }
 
-func _ProviderService_GetCode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Empty)
+func _ProviderService_Configure_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ConfigureRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ProviderServiceServer).GetCode(ctx, in)
+		return srv.(ProviderServiceServer).Configure(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: ProviderService_GetCode_FullMethodName,
+		FullMethod: ProviderService_Configure_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProviderServiceServer).GetCode(ctx, req.(*Empty))
+		return srv.(ProviderServiceServer).Configure(ctx, req.(*ConfigureRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -146,8 +146,8 @@ var ProviderService_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*ProviderServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "GetCode",
-			Handler:    _ProviderService_GetCode_Handler,
+			MethodName: "Configure",
+			Handler:    _ProviderService_Configure_Handler,
 		},
 		{
 			MethodName: "Send",

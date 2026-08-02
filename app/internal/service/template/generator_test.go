@@ -3,7 +3,7 @@ package template
 import (
 	"testing"
 
-	"github.com/devian2011/msgchute/app/internal/dto"
+	"github.com/devian2011/msgchute/internal/dto"
 )
 
 func TestGenerator_GenerateString(t *testing.T) {
@@ -87,7 +87,7 @@ func TestGenerator_GenerateString(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			g, err := NewGenerator()
 			if err != nil {
-				t.Fatalf("NewGenerator() returned nil. Err: %v", err)
+				t.Fatalf("NewGenerator() returned error: %v", err)
 			}
 
 			got, err := g.GenerateString(tt.args.tmpl, tt.args.messageParams, tt.args.tmplParams)
@@ -144,7 +144,7 @@ func BenchmarkGenerator_buildParams(b *testing.B) {
 func BenchmarkGenerator_GenerateString_Simple(b *testing.B) {
 	g, err := NewGenerator()
 	if err != nil {
-		b.Fatalf("NewGenerator() returned nil. Err: %v", err)
+		b.Fatalf("NewGenerator() returned error: %v", err)
 	}
 	tmpl := "Hello, {{ name }}! Your balance is {{ balance }}."
 	tmplParams := map[string]*dto.TemplateParam{
@@ -165,7 +165,7 @@ func BenchmarkGenerator_GenerateString_Simple(b *testing.B) {
 func BenchmarkGenerator_GenerateString_WithFilter(b *testing.B) {
 	g, err := NewGenerator()
 	if err != nil {
-		b.Fatalf("NewGenerator() returned nil. Err: %v", err)
+		b.Fatalf("NewGenerator() returned error: %v", err)
 	}
 	tmpl := "Hello, {{ name | uppercase }}!"
 	tmplParams := map[string]*dto.TemplateParam{

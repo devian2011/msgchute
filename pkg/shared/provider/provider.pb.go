@@ -57,27 +57,27 @@ func (*Empty) Descriptor() ([]byte, []int) {
 	return file_provider_proto_rawDescGZIP(), []int{0}
 }
 
-type GetCodeResponse struct {
+type ConfigureRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Code          string                 `protobuf:"bytes,1,opt,name=code,proto3" json:"code,omitempty"`
+	Params        []byte                 `protobuf:"bytes,1,opt,name=params,proto3" json:"params,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *GetCodeResponse) Reset() {
-	*x = GetCodeResponse{}
+func (x *ConfigureRequest) Reset() {
+	*x = ConfigureRequest{}
 	mi := &file_provider_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *GetCodeResponse) String() string {
+func (x *ConfigureRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*GetCodeResponse) ProtoMessage() {}
+func (*ConfigureRequest) ProtoMessage() {}
 
-func (x *GetCodeResponse) ProtoReflect() protoreflect.Message {
+func (x *ConfigureRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_provider_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -89,25 +89,24 @@ func (x *GetCodeResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GetCodeResponse.ProtoReflect.Descriptor instead.
-func (*GetCodeResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use ConfigureRequest.ProtoReflect.Descriptor instead.
+func (*ConfigureRequest) Descriptor() ([]byte, []int) {
 	return file_provider_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *GetCodeResponse) GetCode() string {
+func (x *ConfigureRequest) GetParams() []byte {
 	if x != nil {
-		return x.Code
+		return x.Params
 	}
-	return ""
+	return nil
 }
 
 type MessageRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Params        []byte                 `protobuf:"bytes,1,opt,name=params,proto3" json:"params,omitempty"`
-	To            []string               `protobuf:"bytes,2,rep,name=to,proto3" json:"to,omitempty"`
-	Meta          []byte                 `protobuf:"bytes,3,opt,name=meta,proto3" json:"meta,omitempty"`
-	Subject       string                 `protobuf:"bytes,4,opt,name=subject,proto3" json:"subject,omitempty"`
-	Body          string                 `protobuf:"bytes,5,opt,name=body,proto3" json:"body,omitempty"`
+	To            []string               `protobuf:"bytes,1,rep,name=to,proto3" json:"to,omitempty"`
+	Params        []byte                 `protobuf:"bytes,2,opt,name=params,proto3" json:"params,omitempty"`
+	Subject       string                 `protobuf:"bytes,3,opt,name=subject,proto3" json:"subject,omitempty"`
+	Body          string                 `protobuf:"bytes,4,opt,name=body,proto3" json:"body,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -142,13 +141,6 @@ func (*MessageRequest) Descriptor() ([]byte, []int) {
 	return file_provider_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *MessageRequest) GetParams() []byte {
-	if x != nil {
-		return x.Params
-	}
-	return nil
-}
-
 func (x *MessageRequest) GetTo() []string {
 	if x != nil {
 		return x.To
@@ -156,9 +148,9 @@ func (x *MessageRequest) GetTo() []string {
 	return nil
 }
 
-func (x *MessageRequest) GetMeta() []byte {
+func (x *MessageRequest) GetParams() []byte {
 	if x != nil {
-		return x.Meta
+		return x.Params
 	}
 	return nil
 }
@@ -177,23 +169,134 @@ func (x *MessageRequest) GetBody() string {
 	return ""
 }
 
+type Response struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Error         string                 `protobuf:"bytes,1,opt,name=error,proto3" json:"error,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Response) Reset() {
+	*x = Response{}
+	mi := &file_provider_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Response) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Response) ProtoMessage() {}
+
+func (x *Response) ProtoReflect() protoreflect.Message {
+	mi := &file_provider_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Response.ProtoReflect.Descriptor instead.
+func (*Response) Descriptor() ([]byte, []int) {
+	return file_provider_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *Response) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
+type MsgResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Response      string                 `protobuf:"bytes,1,opt,name=response,proto3" json:"response,omitempty"`
+	Error         string                 `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`
+	IsCritical    bool                   `protobuf:"varint,3,opt,name=isCritical,proto3" json:"isCritical,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *MsgResponse) Reset() {
+	*x = MsgResponse{}
+	mi := &file_provider_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MsgResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MsgResponse) ProtoMessage() {}
+
+func (x *MsgResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_provider_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MsgResponse.ProtoReflect.Descriptor instead.
+func (*MsgResponse) Descriptor() ([]byte, []int) {
+	return file_provider_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *MsgResponse) GetResponse() string {
+	if x != nil {
+		return x.Response
+	}
+	return ""
+}
+
+func (x *MsgResponse) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
+func (x *MsgResponse) GetIsCritical() bool {
+	if x != nil {
+		return x.IsCritical
+	}
+	return false
+}
+
 var File_provider_proto protoreflect.FileDescriptor
 
 const file_provider_proto_rawDesc = "" +
 	"\n" +
 	"\x0eprovider.proto\x12\bprovider\"\a\n" +
-	"\x05Empty\"%\n" +
-	"\x0fGetCodeResponse\x12\x12\n" +
-	"\x04code\x18\x01 \x01(\tR\x04code\"z\n" +
-	"\x0eMessageRequest\x12\x16\n" +
-	"\x06params\x18\x01 \x01(\fR\x06params\x12\x0e\n" +
-	"\x02to\x18\x02 \x03(\tR\x02to\x12\x12\n" +
-	"\x04meta\x18\x03 \x01(\fR\x04meta\x12\x18\n" +
-	"\asubject\x18\x04 \x01(\tR\asubject\x12\x12\n" +
-	"\x04body\x18\x05 \x01(\tR\x04body2{\n" +
-	"\x0fProviderService\x125\n" +
-	"\aGetCode\x12\x0f.provider.Empty\x1a\x19.provider.GetCodeResponse\x121\n" +
-	"\x04Send\x12\x18.provider.MessageRequest\x1a\x0f.provider.EmptyB\rZ\v./;providerb\x06proto3"
+	"\x05Empty\"*\n" +
+	"\x10ConfigureRequest\x12\x16\n" +
+	"\x06params\x18\x01 \x01(\fR\x06params\"f\n" +
+	"\x0eMessageRequest\x12\x0e\n" +
+	"\x02to\x18\x01 \x03(\tR\x02to\x12\x16\n" +
+	"\x06params\x18\x02 \x01(\fR\x06params\x12\x18\n" +
+	"\asubject\x18\x03 \x01(\tR\asubject\x12\x12\n" +
+	"\x04body\x18\x04 \x01(\tR\x04body\" \n" +
+	"\bResponse\x12\x14\n" +
+	"\x05error\x18\x01 \x01(\tR\x05error\"_\n" +
+	"\vMsgResponse\x12\x1a\n" +
+	"\bresponse\x18\x01 \x01(\tR\bresponse\x12\x14\n" +
+	"\x05error\x18\x02 \x01(\tR\x05error\x12\x1e\n" +
+	"\n" +
+	"isCritical\x18\x03 \x01(\bR\n" +
+	"isCritical2\x87\x01\n" +
+	"\x0fProviderService\x12;\n" +
+	"\tConfigure\x12\x1a.provider.ConfigureRequest\x1a\x12.provider.Response\x127\n" +
+	"\x04Send\x12\x18.provider.MessageRequest\x1a\x15.provider.MsgResponseB\rZ\v./;providerb\x06proto3"
 
 var (
 	file_provider_proto_rawDescOnce sync.Once
@@ -207,17 +310,19 @@ func file_provider_proto_rawDescGZIP() []byte {
 	return file_provider_proto_rawDescData
 }
 
-var file_provider_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_provider_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_provider_proto_goTypes = []any{
-	(*Empty)(nil),           // 0: provider.Empty
-	(*GetCodeResponse)(nil), // 1: provider.GetCodeResponse
-	(*MessageRequest)(nil),  // 2: provider.MessageRequest
+	(*Empty)(nil),            // 0: provider.Empty
+	(*ConfigureRequest)(nil), // 1: provider.ConfigureRequest
+	(*MessageRequest)(nil),   // 2: provider.MessageRequest
+	(*Response)(nil),         // 3: provider.Response
+	(*MsgResponse)(nil),      // 4: provider.MsgResponse
 }
 var file_provider_proto_depIdxs = []int32{
-	0, // 0: provider.ProviderService.GetCode:input_type -> provider.Empty
+	1, // 0: provider.ProviderService.Configure:input_type -> provider.ConfigureRequest
 	2, // 1: provider.ProviderService.Send:input_type -> provider.MessageRequest
-	1, // 2: provider.ProviderService.GetCode:output_type -> provider.GetCodeResponse
-	0, // 3: provider.ProviderService.Send:output_type -> provider.Empty
+	3, // 2: provider.ProviderService.Configure:output_type -> provider.Response
+	4, // 3: provider.ProviderService.Send:output_type -> provider.MsgResponse
 	2, // [2:4] is the sub-list for method output_type
 	0, // [0:2] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
@@ -236,7 +341,7 @@ func file_provider_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_provider_proto_rawDesc), len(file_provider_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   3,
+			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -1,0 +1,289 @@
+package template
+
+import (
+	"context"
+	"errors"
+	"testing"
+
+	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/jmoiron/sqlx"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
+
+	"github.com/devian2011/msgchute/internal/dto"
+)
+
+type MockRepo struct {
+	mock.Mock
+}
+
+func (m *MockRepo) GetByCode(ctx context.Context, code string) (*dto.Template, error) {
+	args := m.Called(ctx, code)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*dto.Template), args.Error(1)
+}
+
+func (m *MockRepo) Find(ctx context.Context, filter *dto.MessageTemplateFilter) (map[string]*dto.Template, uint64, error) {
+	args := m.Called(ctx, filter)
+	if args.Get(0) == nil {
+		return nil, args.Get(1).(uint64), args.Error(2)
+	}
+	return args.Get(0).(map[string]*dto.Template), args.Get(1).(uint64), args.Error(2)
+}
+
+func (m *MockRepo) Create(ctx context.Context, t *dto.Template) error {
+	args := m.Called(ctx, t)
+	return args.Error(0)
+}
+
+func (m *MockRepo) Update(ctx context.Context, t *dto.Template) error {
+	args := m.Called(ctx, t)
+	return args.Error(0)
+}
+
+type MockStringGenerator struct {
+	mock.Mock
+}
+
+func (m *MockStringGenerator) GenerateString(tmpl string, msgParams map[string]*dto.MessageParam, tmplParams map[string]*dto.TemplateParam) (string, error) {
+	args := m.Called(tmpl, msgParams, tmplParams)
+	return args.String(0), args.Error(1)
+}
+
+func TestManager_GenerateMessage(t *testing.T) {
+	ctx := context.Background()
+
+	tests := []struct {
+		name          string
+		msg           *dto.Message
+		mockSetup     func(repo *MockRepo, gen *MockStringGenerator)
+		expectedSubj  string
+		expectedBody  string
+		expectedError bool
+	}{
+		{
+			name: "success without template code",
+			msg: &dto.Message{
+				Subject: "Hello {{.Name}}",
+				Body:    "Body {{.Name}}",
+				Params:  dto.MessageParams{"Name": {Value: "John"}},
+			},
+			mockSetup: func(repo *MockRepo, gen *MockStringGenerator) {
+				gen.On("GenerateString", "Hello {{.Name}}", mock.Anything, mock.Anything).
+					Return("Hello John", nil).Once()
+				gen.On("GenerateString", "Body {{.Name}}", mock.Anything, mock.Anything).
+					Return("Body John", nil).Once()
+			},
+			expectedSubj:  "Hello John",
+			expectedBody:  "Body John",
+			expectedError: false,
+		},
+		{
+			name: "success with template code",
+			msg: &dto.Message{
+				Code:    "welcome",
+				Params:  dto.MessageParams{"Name": {Value: "Alice"}},
+				Subject: "ignored",
+				Body:    "ignored",
+			},
+			mockSetup: func(repo *MockRepo, gen *MockStringGenerator) {
+				tmpl := &dto.Template{
+					Code:    "welcome",
+					Params:  dto.TemplateParams{"Title": {Default: "Mr"}},
+					Subject: "Template Subject {{.Name}}",
+					Body:    "Template Body {{.Name}}",
+				}
+				repo.On("GetByCode", ctx, "welcome").Return(tmpl, nil).Once()
+				gen.On("GenerateString", "Template Subject {{.Name}}", mock.Anything, mock.Anything).
+					Return("Template Subject Alice", nil).Once()
+				gen.On("GenerateString", "Template Body {{.Name}}", mock.Anything, mock.Anything).
+					Return("Template Body Alice", nil).Once()
+			},
+			expectedSubj:  "Template Subject Alice",
+			expectedBody:  "Template Body Alice",
+			expectedError: false,
+		},
+		{
+			name: "template not found",
+			msg: &dto.Message{
+				Code: "missing",
+			},
+			mockSetup: func(repo *MockRepo, gen *MockStringGenerator) {
+				repo.On("GetByCode", ctx, "missing").Return(nil, errors.New("not found")).Once()
+			},
+			expectedError: true,
+		},
+		{
+			name: "generator error on subject",
+			msg: &dto.Message{
+				Subject: "Hello {{.Name}}",
+				Params:  dto.MessageParams{"Name": {Value: "John"}},
+			},
+			mockSetup: func(repo *MockRepo, gen *MockStringGenerator) {
+				gen.On("GenerateString", "Hello {{.Name}}", mock.Anything, mock.Anything).
+					Return("", errors.New("gen error")).Once()
+			},
+			expectedError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			repo := new(MockRepo)
+			gen := new(MockStringGenerator)
+			tt.mockSetup(repo, gen)
+
+			db, _, err := sqlmock.New()
+			require.NoError(t, err)
+			defer db.Close()
+
+			sqlxDB := sqlx.NewDb(db, "postgres")
+			mgr := NewManager(sqlxDB, gen, repo)
+
+			subj, body, err := mgr.GenerateMessage(tt.msg)
+			if tt.expectedError {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expectedSubj, subj)
+			assert.Equal(t, tt.expectedBody, body)
+
+			repo.AssertExpectations(t)
+			gen.AssertExpectations(t)
+		})
+	}
+}
+
+func TestManager_Find(t *testing.T) {
+	repo := new(MockRepo)
+	db, _, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	sqlxDB := sqlx.NewDb(db, "postgres")
+	mgr := NewManager(sqlxDB, &MockStringGenerator{}, repo)
+
+	filter := &dto.MessageTemplateFilter{Limit: 10}
+	expectedResult := map[string]*dto.Template{"code1": {Code: "code1"}}
+	expectedTotal := uint64(1)
+
+	repo.On("Find", context.Background(), filter).Return(expectedResult, expectedTotal, nil).Once()
+
+	result, total, err := mgr.Find(filter)
+	assert.NoError(t, err)
+	assert.Equal(t, expectedResult, result)
+	assert.Equal(t, expectedTotal, total)
+	repo.AssertExpectations(t)
+}
+
+func TestManager_Create(t *testing.T) {
+	db, sqlMock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	sqlxDB := sqlx.NewDb(db, "postgres")
+	repo := new(MockRepo)
+	gen := new(MockStringGenerator)
+	mgr := NewManager(sqlxDB, gen, repo)
+
+	tmpl := &dto.Template{Code: "new_template"}
+
+	t.Run("success", func(t *testing.T) {
+		sqlMock.ExpectBegin()
+		repo.On("GetByCode", mock.Anything, "new_template").Return(nil, nil).Once()
+		repo.On("Create", mock.Anything, tmpl).Return(nil).Once()
+		sqlMock.ExpectCommit()
+
+		created, err := mgr.Create(tmpl)
+		assert.NoError(t, err)
+		assert.Equal(t, tmpl, created)
+		repo.AssertExpectations(t)
+		assert.NoError(t, sqlMock.ExpectationsWereMet())
+	})
+
+	t.Run("template already exists", func(t *testing.T) {
+		sqlMock.ExpectBegin()
+		existing := &dto.Template{Code: "new_template"}
+		repo.On("GetByCode", mock.Anything, "new_template").Return(existing, nil).Once()
+		sqlMock.ExpectRollback()
+
+		created, err := mgr.Create(tmpl)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "already exists")
+		assert.Nil(t, created)
+		repo.AssertExpectations(t)
+		assert.NoError(t, sqlMock.ExpectationsWereMet())
+	})
+
+	t.Run("get error", func(t *testing.T) {
+		sqlMock.ExpectBegin()
+		repo.On("GetByCode", mock.Anything, "new_template").Return(nil, errors.New("db error")).Once()
+		sqlMock.ExpectRollback()
+
+		created, err := mgr.Create(tmpl)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "get template by code err")
+		assert.Nil(t, created)
+		repo.AssertExpectations(t)
+		assert.NoError(t, sqlMock.ExpectationsWereMet())
+	})
+}
+
+func TestManager_Update(t *testing.T) {
+	db, sqlMock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	sqlxDB := sqlx.NewDb(db, "postgres")
+	repo := new(MockRepo)
+	gen := new(MockStringGenerator)
+	mgr := NewManager(sqlxDB, gen, repo)
+
+	tmpl := &dto.Template{Code: "existing_template"}
+
+	t.Run("success", func(t *testing.T) {
+		sqlMock.ExpectBegin()
+		existing := &dto.Template{Code: "existing_template"}
+		repo.On("GetByCode", mock.Anything, "existing_template").Return(existing, nil).Once()
+		repo.On("Update", mock.Anything, tmpl).Return(nil).Once()
+		sqlMock.ExpectCommit()
+
+		updated, err := mgr.Update(tmpl)
+		assert.NoError(t, err)
+		assert.Equal(t, tmpl, updated)
+		repo.AssertExpectations(t)
+		assert.NoError(t, sqlMock.ExpectationsWereMet())
+	})
+
+	t.Run("template not found", func(t *testing.T) {
+		sqlMock.ExpectBegin()
+		repo.On("GetByCode", mock.Anything, "existing_template").Return(nil, nil).Once()
+		sqlMock.ExpectRollback()
+
+		updated, err := mgr.Update(tmpl)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "not found")
+		assert.Nil(t, updated)
+		repo.AssertExpectations(t)
+		assert.NoError(t, sqlMock.ExpectationsWereMet())
+	})
+
+	t.Run("update error", func(t *testing.T) {
+		sqlMock.ExpectBegin()
+		existing := &dto.Template{Code: "existing_template"}
+		repo.On("GetByCode", mock.Anything, "existing_template").Return(existing, nil).Once()
+		repo.On("Update", mock.Anything, tmpl).Return(errors.New("update failed")).Once()
+		sqlMock.ExpectRollback()
+
+		updated, err := mgr.Update(tmpl)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "update failed")
+		assert.Nil(t, updated)
+		repo.AssertExpectations(t)
+		assert.NoError(t, sqlMock.ExpectationsWereMet())
+	})
+}

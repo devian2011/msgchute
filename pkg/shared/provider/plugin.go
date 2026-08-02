@@ -4,6 +4,7 @@ package provider
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/hashicorp/go-plugin"
 	"google.golang.org/grpc"
@@ -11,14 +12,20 @@ import (
 
 type Message struct {
 	To      []string
-	Meta    []byte
+	Params  []byte
 	Subject string
 	Body    string
 }
 
+type MessageResponse struct {
+	IsCritical bool
+	Err        error
+	Response   string
+}
+
 type Provider interface {
-	GetCode() string
-	Send(params []byte, msg *Message) error
+	Configure(params []byte) error
+	Send(msg *Message) *MessageResponse
 }
 
 var HandshakeConfig = plugin.HandshakeConfig{
@@ -50,43 +57,75 @@ type GRPCServer struct {
 	Impl Provider
 }
 
-func (s *GRPCServer) GetCode(ctx context.Context, req *Empty) (*GetCodeResponse, error) {
-	return &GetCodeResponse{Code: s.Impl.GetCode()}, nil
+func (s *GRPCServer) Configure(ctx context.Context, req *ConfigureRequest) (*Response, error) {
+	err := s.Impl.Configure(req.Params)
+	if err != nil {
+		return &Response{Error: err.Error()}, nil
+	}
+	return &Response{Error: ""}, nil
 }
 
-func (s *GRPCServer) Send(ctx context.Context, req *MessageRequest) (*Empty, error) {
+func (s *GRPCServer) Send(ctx context.Context, req *MessageRequest) (*MsgResponse, error) {
 	msg := &Message{
 		To:      req.To,
 		Subject: req.Subject,
 		Body:    req.Body,
-		Meta:    req.Meta,
+		Params:  req.Params,
 	}
 
-	err := s.Impl.Send(req.Params, msg)
-	return &Empty{}, err
+	resp := s.Impl.Send(msg)
+
+	var errStr string
+	if resp.Err != nil {
+		errStr = resp.Err.Error()
+	}
+
+	return &MsgResponse{
+		Response:   resp.Response,
+		Error:      errStr,
+		IsCritical: resp.IsCritical,
+	}, nil
 }
 
 type GRPCClient struct {
 	client ProviderServiceClient
 }
 
-func (c *GRPCClient) GetCode() string {
-	resp, err := c.client.GetCode(context.Background(), &Empty{})
+func (c *GRPCClient) Configure(params []byte) error {
+	resp, err := c.client.Configure(context.Background(), &ConfigureRequest{Params: params})
 	if err != nil {
-		return ""
+		return err
 	}
-	return resp.Code
+	if resp.Error != "" {
+		return fmt.Errorf(resp.Error)
+	}
+	return nil
 }
 
-func (c *GRPCClient) Send(params []byte, msg *Message) error {
+func (c *GRPCClient) Send(msg *Message) *MessageResponse {
 	gMsg := &MessageRequest{
-		Params:  params,
 		To:      msg.To,
 		Subject: msg.Subject,
 		Body:    msg.Body,
-		Meta:    msg.Meta,
+		Params:  msg.Params,
 	}
 
-	_, err := c.client.Send(context.Background(), gMsg)
-	return err
+	resp, err := c.client.Send(context.Background(), gMsg)
+	if err != nil {
+		return &MessageResponse{
+			IsCritical: true,
+			Err:        err,
+		}
+	}
+
+	var respErr error
+	if resp.Error != "" {
+		respErr = fmt.Errorf(resp.Error)
+	}
+
+	return &MessageResponse{
+		Response:   resp.Response,
+		IsCritical: resp.IsCritical,
+		Err:        respErr,
+	}
 }
