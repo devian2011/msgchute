@@ -1,11 +1,10 @@
 # MSGChute Notification Service
 
-<p align="center">
-  <img src="https://shields.io" alt="License">
-  <img src="https://shields.io" alt="Go Version">
-  <img src="https://shields.io" alt="Release">
-  <img src="https://shields.io" alt="CI Status">
-</p>
+<a href="/devian2011/msgchute/actions">
+  <img src="/devian2011/msgchute/actions/workflows/ci.yml/badge.svg" alt="CI/CD Status">
+</a>
+
+**Docker Image:** `docker pull deviandevstudio/msgchute:latest`
 
 A high-performance, fault-tolerant microservice written in **Go**, designed around a **push model** to aggregate, route, and deliver messages to external systems and communication channels (such as Email, Telegram, and others).
 
