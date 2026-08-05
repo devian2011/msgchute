@@ -99,6 +99,8 @@ func Bootstrap(ctx context.Context, cfgFilePath string) (*registry.AppRegistry, 
 
 				MessageFinder:   admin.NewMessageFindHandler(msgFinder),
 				MessageFindByID: admin.NewMessageFindByIDHandler(msgFinder),
+
+				WorkerStatus: admin.NewWorkerHandler(workerManager),
 			},
 		},
 	}, nil

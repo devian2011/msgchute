@@ -91,7 +91,6 @@ func TestQueue_Add(t *testing.T) {
 				Transport: "email",
 				Retry:     &dto.Retry{Retries: 2, Strategy: "linear"},
 			},
-			mockTaskErr: nil,
 			mockMsgErr:  errors.New("message db error"),
 			expectedErr: true,
 		},
@@ -112,17 +111,18 @@ func TestQueue_Add(t *testing.T) {
 
 			queue := NewQueue(context.Background(), sqlxDB, mockTaskRepo, mockMsgRepo)
 
-			if tt.mockTaskErr == nil && tt.mockMsgErr == nil {
-				mockTaskRepo.On("Create", mock.Anything).Return(nil, nil).Once()
-				mockMsgRepo.On("Create", mock.Anything).Return(nil).Once()
+			switch {
+			case tt.mockMsgErr != nil:
+				mockMsgRepo.On("Create", mock.Anything, mock.Anything).Return(tt.mockMsgErr).Once()
+				sqlMock.ExpectRollback()
+			case tt.mockTaskErr != nil:
+				mockMsgRepo.On("Create", mock.Anything, mock.Anything).Return(nil).Once()
+				mockTaskRepo.On("Create", mock.Anything, mock.Anything).Return(nil, tt.mockTaskErr).Once()
+				sqlMock.ExpectRollback()
+			default:
+				mockMsgRepo.On("Create", mock.Anything, mock.Anything).Return(nil).Once()
+				mockTaskRepo.On("Create", mock.Anything, mock.Anything).Return(nil, nil).Once()
 				sqlMock.ExpectCommit()
-			} else if tt.mockTaskErr != nil {
-				mockTaskRepo.On("Create", mock.Anything).Return(nil, tt.mockTaskErr).Once()
-				sqlMock.ExpectRollback()
-			} else if tt.mockMsgErr != nil {
-				mockTaskRepo.On("Create", mock.Anything).Return(nil, nil).Once()
-				mockMsgRepo.On("Create", mock.Anything).Return(tt.mockMsgErr).Once()
-				sqlMock.ExpectRollback()
 			}
 
 			msg, task, err := queue.Add(tt.message)

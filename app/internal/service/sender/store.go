@@ -40,7 +40,7 @@ func NewWorkerStore(
 
 func (s *WorkerStore) GetTasks() ([]retrier.Task, error) {
 	now := time.Now()
-	var result []retrier.Task
+	result := make([]retrier.Task, 0)
 
 	getErr := storage.InTransaction(context.TODO(), s.db, func(ctx context.Context) error {
 		storeTasks, err := s.taskRepo.List(ctx, dto.TaskFilter{
@@ -103,7 +103,7 @@ func (s *WorkerStore) GetTasks() ([]retrier.Task, error) {
 				})
 			}
 		}
-		
+
 		return s.taskRepo.Lock(ctx, taskIDs)
 	})
 

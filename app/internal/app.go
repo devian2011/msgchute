@@ -33,6 +33,7 @@ func (a *App) Run() error {
 
 	initErr := a.r.Services.Sender.Init()
 	if initErr != nil {
+		a.r.Services.Sender.Shutdown()
 		return initErr
 	}
 	a.r.Services.Sender.Run()

@@ -39,22 +39,18 @@ type MessageFilter struct {
 // Message represents the core message entity tracking dispatch metadata and payload definitions.
 type Message struct {
 	ID         uuid.UUID     `json:"id" db:"id"`
-	SenderID   string        `json:"sender_id" db:"sender_id"`
-	Recipients Recipients    `json:"recipients" db:"recipients"`
+	SenderID   string        `json:"sender_id" db:"sender_id" validate:"required"`
+	Recipients Recipients    `json:"recipients" db:"recipients" validate:"required"`
 	Status     MessageStatus `json:"status" db:"status"`
-	// Meta some additional fields like CC Bcc or Files etc.
-	Meta MessageMeta `json:"metadata" db:"meta"`
-	// Code template code
-	Code string `json:"code,omitempty" db:"code"`
-	// Params message params for generate templates
-	Params MessageParams `json:"params,omitempty" db:"params"`
-	// Transport message provider
-	Transport string    `json:"transport" db:"transport"`
-	Subject   string    `json:"subject" db:"subject"`
-	Body      string    `json:"body" db:"body"`
-	Deadline  time.Time `json:"deadline" db:"deadline"`
-	Retry     *Retry    `json:"retry,omitempty" db:"retry"`
-	Schedule  time.Time `json:"schedule,omitempty" db:"schedule"`
+	Meta       MessageMeta   `json:"metadata" db:"meta"`                           // Meta some additional fields like CC Bcc or Files etc.
+	Code       *string       `json:"code,omitempty" db:"code"`                     // Code template code
+	Params     MessageParams `json:"params,omitempty" db:"params"`                 // Params message params for generate templates
+	Transport  string        `json:"transport" db:"transport" validate:"required"` // Transport message provider
+	Subject    string        `json:"subject" db:"subject"`
+	Body       string        `json:"body" db:"body"`
+	Deadline   time.Time     `json:"deadline" db:"deadline"`
+	Retry      *Retry        `json:"retry,omitempty" db:"retry"`
+	Schedule   time.Time     `json:"schedule,omitempty" db:"schedule"`
 }
 
 // Recipients represents a list of target delivery addresses or identifiers.
@@ -170,12 +166,12 @@ type MessageTemplateFilter struct {
 
 // Template establishes baseline layouts, mandatory properties, and default retry bounds for structural content generation.
 type Template struct {
-	Code        string         `json:"code" db:"code"`
-	Name        string         `json:"name" db:"name"`
+	Code        string         `json:"code" db:"code" validate:"required"`
+	Name        string         `json:"name" db:"name" validate:"required"`
 	Description string         `json:"description" db:"description"`
 	Params      TemplateParams `json:"params" db:"params"`
-	Subject     string         `json:"subject" db:"subject"`
-	Body        string         `json:"body" db:"body"`
+	Subject     string         `json:"subject" db:"subject" validate:"required"`
+	Body        string         `json:"body" db:"body" validate:"required"`
 }
 
 // TemplateParam handles structural fallback expectations when explicit variables remain unassigned.

@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -111,13 +112,68 @@ func (s *SmtpProvider) Send(msg *provider.Message) *provider.MessageResponse {
 		}
 	}
 
-	// SMTP authentication and sending
 	addr := fmt.Sprintf("%s:%d", s.config.Host, s.config.Port)
-	auth := smtp.PlainAuth("", s.config.Username, s.config.Password, s.config.Host)
 
-	if err := sendMailFunc(addr, auth, from, allRecipients, emailBody); err != nil {
+	tlsConfig := &tls.Config{
+		ServerName: s.config.Host,
+	}
+	conn, err := tls.Dial("tcp", addr, tlsConfig)
+	if err != nil {
 		return &provider.MessageResponse{
-			Err:        fmt.Errorf("SMTP send failed: %w", err),
+			Err:        fmt.Errorf("TLS connection failed: %w", err),
+			IsCritical: true,
+		}
+	}
+	defer conn.Close()
+
+	client, err := smtp.NewClient(conn, s.config.Host)
+	if err != nil {
+		return &provider.MessageResponse{
+			Err:        fmt.Errorf("SMTP client creation failed: %w", err),
+			IsCritical: true,
+		}
+	}
+	defer client.Quit()
+
+	auth := smtp.PlainAuth("", s.config.Username, s.config.Password, s.config.Host)
+	if err := client.Auth(auth); err != nil {
+		return &provider.MessageResponse{
+			Err:        fmt.Errorf("SMTP auth failed: %w", err),
+			IsCritical: true,
+		}
+	}
+
+	if err := client.Mail(from); err != nil {
+		return &provider.MessageResponse{
+			Err:        fmt.Errorf("MAIL FROM failed: %w", err),
+			IsCritical: true,
+		}
+	}
+	for _, rcpt := range allRecipients {
+		if err := client.Rcpt(rcpt); err != nil {
+			return &provider.MessageResponse{
+				Err:        fmt.Errorf("RCPT TO %s failed: %w", rcpt, err),
+				IsCritical: true,
+			}
+		}
+	}
+
+	w, err := client.Data()
+	if err != nil {
+		return &provider.MessageResponse{
+			Err:        fmt.Errorf("DATA command failed: %w", err),
+			IsCritical: true,
+		}
+	}
+	if _, err = w.Write(emailBody); err != nil {
+		return &provider.MessageResponse{
+			Err:        fmt.Errorf("failed to write email body: %w", err),
+			IsCritical: true,
+		}
+	}
+	if err = w.Close(); err != nil {
+		return &provider.MessageResponse{
+			Err:        fmt.Errorf("failed to close email body writer: %w", err),
 			IsCritical: true,
 		}
 	}

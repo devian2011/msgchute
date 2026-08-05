@@ -1,5 +1,5 @@
 http:
-  port: ${APP_HTTP_PORT}
+  addr: ${APP_HTTP_ADDR}
   withSwagger: false
   config:
     readTimeout: ${APP_HTTP_READ_TIMEOUT|1s}

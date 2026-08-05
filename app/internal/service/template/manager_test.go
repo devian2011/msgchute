@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/devian2011/msgchute/internal/dto"
+	"github.com/devian2011/msgchute/pkg/helper"
 )
 
 type MockRepo struct {
@@ -84,7 +85,7 @@ func TestManager_GenerateMessage(t *testing.T) {
 		{
 			name: "success with template code",
 			msg: &dto.Message{
-				Code:    "welcome",
+				Code:    helper.Ptr("welcome"),
 				Params:  dto.MessageParams{"Name": {Value: "Alice"}},
 				Subject: "ignored",
 				Body:    "ignored",
@@ -109,7 +110,7 @@ func TestManager_GenerateMessage(t *testing.T) {
 		{
 			name: "template not found",
 			msg: &dto.Message{
-				Code: "missing",
+				Code: helper.Ptr("missing"),
 			},
 			mockSetup: func(repo *MockRepo, gen *MockStringGenerator) {
 				repo.On("GetByCode", ctx, "missing").Return(nil, errors.New("not found")).Once()

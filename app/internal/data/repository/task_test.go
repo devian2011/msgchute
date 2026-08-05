@@ -173,7 +173,7 @@ func TestTaskRepository_Create(t *testing.T) {
 			WithArgs(
 				empty.ID, empty.MessageID, empty.Worker, empty.Status, empty.Retries,
 				empty.MaxRetries, empty.BackOffCode, empty.BackOffParams,
-				nil, empty.IsProcessed, nil, nil,
+				empty.Deadline, empty.IsProcessed, empty.LastRun, empty.NextRun,
 			).
 			WillReturnResult(sqlmock.NewResult(1, 1))
 
@@ -242,8 +242,8 @@ func TestTaskRepository_Update(t *testing.T) {
 		mock.ExpectExec(expectedSQL).
 			WithArgs(
 				zeroTask.MessageID, zeroTask.Worker, zeroTask.Status, zeroTask.Retries, zeroTask.MaxRetries,
-				zeroTask.BackOffCode, zeroTask.BackOffParams, nil,
-				zeroTask.IsProcessed, nil, nil,
+				zeroTask.BackOffCode, zeroTask.BackOffParams, zeroTask.Deadline,
+				zeroTask.IsProcessed, zeroTask.LastRun, zeroTask.NextRun,
 				zeroTask.ID,
 			).
 			WillReturnResult(sqlmock.NewResult(0, 1))

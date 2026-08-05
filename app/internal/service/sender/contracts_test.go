@@ -46,6 +46,12 @@ func (m *MockTaskRepo) Update(_ context.Context, task *dto.Task) (*dto.Task, err
 	return args.Get(0).(*dto.Task), args.Error(1)
 }
 
+// Lock implements the taskRepo interface for blocking tasks.
+func (m *MockTaskRepo) Lock(_ context.Context, ids []uuid.UUID) error {
+	args := m.Called(ids)
+	return args.Error(0)
+}
+
 // MockTaskResultRepo is a mock implementation of taskResultRepo.
 type MockTaskResultRepo struct {
 	mock.Mock

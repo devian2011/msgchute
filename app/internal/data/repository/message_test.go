@@ -14,6 +14,7 @@ import (
 
 	"github.com/devian2011/msgchute/internal/dto"
 	"github.com/devian2011/msgchute/internal/io/storage"
+	"github.com/devian2011/msgchute/pkg/helper"
 )
 
 func TestMessageRepository_Create(t *testing.T) {
@@ -28,7 +29,7 @@ func TestMessageRepository_Create(t *testing.T) {
 		ID:         msgID,
 		SenderID:   "srv_auth",
 		Transport:  "email",
-		Code:       "otp_verify",
+		Code:       helper.Ptr("otp_verify"),
 		Recipients: dto.Recipients{"user@example.com"},
 		Status:     dto.MessageStatusRunning,
 		Meta:       dto.MessageMeta{"priority": "high"},
@@ -108,7 +109,7 @@ func TestMessageRepository_Find(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, uint64(1), total)
 		assert.Len(t, messages, 1)
-		assert.Equal(t, "invoice_remind", messages[0].Code)
+		assert.Equal(t, "invoice_remind", *messages[0].Code)
 	})
 
 	t.Run("fallback sorting on invalid sort field", func(t *testing.T) {
@@ -157,12 +158,14 @@ func TestMessageRepository_CreateWithTransaction(t *testing.T) {
 		Status:    dto.MessageStatusRunning,
 		Subject:   "Tx Subj",
 		Body:      "Tx Body",
+		Code:      helper.Ptr("1234"),
+		Schedule:  time.Time{},
 	}
 
 	expectedSQL := "INSERT INTO messages (id,sender_id,transport,template_code,recipients,params,retry,schedule,deadline,subject,body,status,meta) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)"
 
 	mock.ExpectExec(expectedSQL).
-		WithArgs(msg.ID, msg.SenderID, msg.Transport, nil, msg.Recipients, msg.Params, msg.Retry, nil, msg.Deadline, msg.Subject, msg.Body, msg.Status, msg.Meta).
+		WithArgs(msg.ID, msg.SenderID, msg.Transport, msg.Code, msg.Recipients, msg.Params, msg.Retry, msg.Schedule, msg.Deadline, msg.Subject, msg.Body, msg.Status, msg.Meta).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
 	err = repo.Create(ctxWithTx, msg)
@@ -216,7 +219,7 @@ func TestGetByID_Success(t *testing.T) {
 	assert.NotNil(t, msg)
 	assert.Equal(t, id.String(), msg.ID.String())
 	assert.Equal(t, "sender-1", msg.SenderID)
-	assert.Equal(t, "tmpl_001", msg.Code)
+	assert.Equal(t, "tmpl_001", *msg.Code)
 	assert.Equal(t, dto.MessageStatusRunning, msg.Status)
 
 	assert.NoError(t, mock.ExpectationsWereMet())

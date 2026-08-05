@@ -41,12 +41,12 @@ func (m *ProviderManager) Close() {
 	m.providerMtx.Unlock()
 }
 
-func (m *ProviderManager) BuildPlugin(code string, params []byte) error {
-	if _, exists := m.pluginMap[code]; exists {
-		return fmt.Errorf("unknown plugin %s", code)
+func (m *ProviderManager) BuildPlugin(name string, code string, params []byte) error {
+	if _, exists := m.pluginMap[code]; !exists {
+		return fmt.Errorf("unknown plugin %s: %s", name, code)
 	}
 	if !file.Exists(m.pluginMap[code]) {
-		return fmt.Errorf("plugin %s binary not found at %s", code, m.pluginMap[code])
+		return fmt.Errorf("plugin %s %s binary not found at %s", name, code, m.pluginMap[code])
 	}
 
 	client := plugin.NewClient(&plugin.ClientConfig{
@@ -59,33 +59,37 @@ func (m *ProviderManager) BuildPlugin(code string, params []byte) error {
 	rpcClient, err := client.Client()
 	if err != nil {
 		client.Kill()
-		return fmt.Errorf("handshake failed for '%s': %s", code, err)
+		return fmt.Errorf("handshake failed for %s: '%s': %s", name, code, err)
 	}
 
 	raw, err := rpcClient.Dispense("provider")
 	if err != nil {
 		client.Kill()
-		return fmt.Errorf("plugin '%s' does not implement 'provider': %s", code, err)
+		return fmt.Errorf("plugin %s: '%s' does not implement 'provider': %s", name, code, err)
 	}
 
 	p, ok := raw.(provider.Provider)
 	if !ok {
 		client.Kill()
-		return fmt.Errorf("type assertion failed for '%s'", code)
+		return fmt.Errorf("type assertion failed for %s: '%s'", name, code)
 	}
 
 	configureErr := p.Configure(params)
 	if code == "" {
 		client.Kill()
-		return fmt.Errorf("plugin '%s' configure error: %s", code, configureErr)
+		return fmt.Errorf("plugin %s: '%s' configure error: %s", name, code, configureErr)
 	}
 
 	m.providerMtx.Lock()
-	m.providers[code] = p
+	m.providers[name] = p
 	m.clients = append(m.clients, client)
 	m.providerMtx.Unlock()
 
-	slog.Info("successfully mounted channel: [%s] from '%s'", code, m.pluginMap[code])
+	slog.Info("successfully mounted channel",
+		"name", name,
+		"code", code,
+		"path", m.pluginMap[code],
+	)
 
 	return nil
 }

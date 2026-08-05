@@ -99,17 +99,13 @@ func (r *TaskRepository) GetByMessageID(ctx context.Context, messageID uuid.UUID
 // Create inserts a new task into the database.
 // Returns the inserted task (with generated fields filled) or an error.
 func (r *TaskRepository) Create(ctx context.Context, task *dto.Task) (*dto.Task, error) {
-	deadline := toNullTime(task.Deadline)
-	lastRun := toNullTime(task.LastRun)
-	nextRun := toNullTime(task.NextRun)
-
 	query, args, err := r.builder.
 		Insert(taskTable).
 		Columns("id", "message_id", "worker", "status", "retries", "max_retries",
 			"backoff_code", "backoff_params", "deadline", "is_processed", "last_run", "next_run").
 		Values(task.ID, task.MessageID, task.Worker, task.Status, task.Retries,
 			task.MaxRetries, task.BackOffCode, task.BackOffParams,
-			deadline, task.IsProcessed, lastRun, nextRun).
+			task.Deadline, task.IsProcessed, task.LastRun, task.NextRun).
 		ToSql()
 	if err != nil {
 		return nil, fmt.Errorf("build insert: %w", err)
@@ -127,10 +123,6 @@ func (r *TaskRepository) Create(ctx context.Context, task *dto.Task) (*dto.Task,
 // Returns the updated task or an error if the update fails.
 // Returns ErrTaskNotFound if no task exists with the given ID.
 func (r *TaskRepository) Update(ctx context.Context, task *dto.Task) (*dto.Task, error) {
-	deadline := toNullTime(task.Deadline)
-	lastRun := toNullTime(task.LastRun)
-	nextRun := toNullTime(task.NextRun)
-
 	query, args, err := r.builder.
 		Update(taskTable).
 		Set("message_id", task.MessageID).
@@ -140,10 +132,10 @@ func (r *TaskRepository) Update(ctx context.Context, task *dto.Task) (*dto.Task,
 		Set("max_retries", task.MaxRetries).
 		Set("backoff_code", task.BackOffCode).
 		Set("backoff_params", task.BackOffParams).
-		Set("deadline", deadline).
+		Set("deadline", task.Deadline).
 		Set("is_processed", task.IsProcessed).
-		Set("last_run", lastRun).
-		Set("next_run", nextRun).
+		Set("last_run", task.LastRun).
+		Set("next_run", task.NextRun).
 		Where(squirrel.Eq{"id": task.ID}).
 		ToSql()
 	if err != nil {

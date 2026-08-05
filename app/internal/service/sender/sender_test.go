@@ -16,7 +16,6 @@ import (
 	"github.com/devian2011/msgchute/pkg/shared/provider"
 )
 
-// MockProviderManager мок для интерфейса pm
 type MockProviderManager struct {
 	mock.Mock
 }
@@ -29,11 +28,15 @@ func (m *MockProviderManager) GetProvider(code string) (provider.Provider, error
 	return args.Get(0).(provider.Provider), args.Error(1)
 }
 
+func (m *MockProviderManager) BuildPlugin(name string, code string, params []byte) error {
+	args := m.Called(name, code, params)
+	return args.Error(0)
+}
+
 func (m *MockProviderManager) Close() {
 	m.Called()
 }
 
-// MockWorkerManager мок для интерфейса wm
 type MockWorkerManager struct {
 	mock.Mock
 }
@@ -51,7 +54,6 @@ func (m *MockWorkerManager) Stop() {
 	m.Called()
 }
 
-// MockTemplateGenerator мок для TemplateGenerator
 type MockTemplateGenerator struct {
 	mock.Mock
 }
@@ -61,7 +63,6 @@ func (m *MockTemplateGenerator) GenerateMessage(msg *dto.Message) (subject strin
 	return args.String(0), args.String(1), args.Error(2)
 }
 
-// MockProvider мок для provider.Provider
 type MockProvider struct {
 	mock.Mock
 }
@@ -78,8 +79,6 @@ func (m *MockProvider) Send(msg *provider.Message) *provider.MessageResponse {
 	}
 	return args.Get(0).(*provider.MessageResponse)
 }
-
-// Тесты
 
 func TestSender_Init(t *testing.T) {
 	ctx := context.Background()
@@ -122,6 +121,9 @@ func TestSender_Init(t *testing.T) {
 	wm := new(MockWorkerManager)
 	tmplGen := new(MockTemplateGenerator)
 
+	pm.On("BuildPlugin", "email", "", mock.Anything).Return(nil).Once()
+	pm.On("BuildPlugin", "sms", "", mock.Anything).Return(nil).Once()
+
 	wm.On("RegisterWorker", "email", mock.Anything, mock.Anything).Return(nil).Once()
 	wm.On("RegisterWorker", "sms", mock.Anything, mock.Anything).Return(nil).Once()
 
@@ -129,6 +131,7 @@ func TestSender_Init(t *testing.T) {
 	err := sender.Init()
 	assert.NoError(t, err)
 	wm.AssertExpectations(t)
+	pm.AssertExpectations(t)
 }
 
 func TestSender_Init_Error(t *testing.T) {
@@ -157,6 +160,7 @@ func TestSender_Init_Error(t *testing.T) {
 	wm := new(MockWorkerManager)
 	tmplGen := new(MockTemplateGenerator)
 
+	pm.On("BuildPlugin", "email", "", mock.Anything).Return(nil).Once()
 	wm.On("RegisterWorker", "email", mock.Anything, mock.Anything).Return(errors.New("registration failed")).Once()
 
 	sender := NewSender(ctx, cfg, pm, wm, tmplGen)
@@ -164,6 +168,7 @@ func TestSender_Init_Error(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "registration failed")
 	wm.AssertExpectations(t)
+	pm.AssertExpectations(t)
 }
 
 func TestSender_sendFunc(t *testing.T) {
@@ -178,19 +183,13 @@ func TestSender_sendFunc(t *testing.T) {
 
 	t.Run("success", func(t *testing.T) {
 		msg := &dto.Message{
+			Transport:  "email",
 			Recipients: dto.Recipients{"test@example.com"},
 			Meta:       dto.MessageMeta{"key": "value"},
 			Subject:    "Hello",
 			Body:       "World",
 		}
-		task := retrier.Task{
-			Worker: "email",
-			Payload: func() []byte {
-				b, _ := sonic.Marshal(msg)
-				return b
-			}(),
-		}
-		payload, _ := sonic.Marshal(task)
+		payload, _ := sonic.Marshal(msg)
 
 		tmplGen.On("GenerateMessage", msg).Return("Hello", "World", nil).Once()
 		prv := new(MockProvider)
@@ -202,7 +201,7 @@ func TestSender_sendFunc(t *testing.T) {
 
 		resp, execErr := sendFunc(ctx, payload)
 		assert.Equal(t, "OK", resp)
-		assert.Nil(t, execErr) // execErr - *retrier.ExecutionError, nil означает отсутствие ошибки
+		assert.Nil(t, execErr)
 		tmplGen.AssertExpectations(t)
 		pm.AssertExpectations(t)
 		prv.AssertExpectations(t)
@@ -214,15 +213,14 @@ func TestSender_sendFunc(t *testing.T) {
 		assert.Empty(t, resp)
 		require.NotNil(t, execErr)
 		assert.Equal(t, retrier.CriticalState, execErr.State)
-		assert.Contains(t, execErr.Err.Error(), "task unmarshal payload")
+		assert.Contains(t, execErr.Err.Error(), "error unmarshal message task payload")
 	})
 
 	t.Run("get provider error", func(t *testing.T) {
-		task := retrier.Task{
-			Worker:  "unknown",
-			Payload: []byte(`{}`),
+		msg := &dto.Message{
+			Transport: "unknown",
 		}
-		payload, _ := sonic.Marshal(task)
+		payload, _ := sonic.Marshal(msg)
 
 		pm.On("GetProvider", "unknown").Return(nil, errors.New("provider not found")).Once()
 
@@ -235,33 +233,14 @@ func TestSender_sendFunc(t *testing.T) {
 	})
 
 	t.Run("message unmarshal error", func(t *testing.T) {
-		task := retrier.Task{
-			Worker:  "email",
-			Payload: []byte(`invalid`),
-		}
-		payload, _ := sonic.Marshal(task)
-
-		prv := new(MockProvider)
-		pm.On("GetProvider", "email").Return(prv, nil).Once()
-
-		resp, execErr := sendFunc(ctx, payload)
-		assert.Empty(t, resp)
-		require.NotNil(t, execErr)
-		assert.Equal(t, retrier.CriticalState, execErr.State)
-		assert.Contains(t, execErr.Err.Error(), "error unmarshal message task payload")
-		pm.AssertExpectations(t)
+		// уже есть тест на invalid json, этот можно убрать
 	})
 
 	t.Run("template generation error", func(t *testing.T) {
-		msg := &dto.Message{}
-		task := retrier.Task{
-			Worker: "email",
-			Payload: func() []byte {
-				b, _ := sonic.Marshal(msg)
-				return b
-			}(),
+		msg := &dto.Message{
+			Transport: "email",
 		}
-		payload, _ := sonic.Marshal(task)
+		payload, _ := sonic.Marshal(msg)
 
 		tmplGen.On("GenerateMessage", msg).Return("", "", errors.New("template error")).Once()
 		prv := new(MockProvider)
@@ -278,17 +257,11 @@ func TestSender_sendFunc(t *testing.T) {
 
 	t.Run("provider send error (critical)", func(t *testing.T) {
 		msg := &dto.Message{
+			Transport:  "email",
 			Recipients: dto.Recipients{"test@example.com"},
 			Meta:       dto.MessageMeta{},
 		}
-		task := retrier.Task{
-			Worker: "email",
-			Payload: func() []byte {
-				b, _ := sonic.Marshal(msg)
-				return b
-			}(),
-		}
-		payload, _ := sonic.Marshal(task)
+		payload, _ := sonic.Marshal(msg)
 
 		tmplGen.On("GenerateMessage", msg).Return("", "", nil).Once()
 		prv := new(MockProvider)
@@ -310,16 +283,10 @@ func TestSender_sendFunc(t *testing.T) {
 
 	t.Run("provider send error (usual)", func(t *testing.T) {
 		msg := &dto.Message{
+			Transport:  "email",
 			Recipients: dto.Recipients{"test@example.com"},
 		}
-		task := retrier.Task{
-			Worker: "email",
-			Payload: func() []byte {
-				b, _ := sonic.Marshal(msg)
-				return b
-			}(),
-		}
-		payload, _ := sonic.Marshal(task)
+		payload, _ := sonic.Marshal(msg)
 
 		tmplGen.On("GenerateMessage", msg).Return("", "", nil).Once()
 		prv := new(MockProvider)

@@ -17,6 +17,7 @@ type TemplateGenerator interface {
 
 type pm interface {
 	GetProvider(code string) (provider.Provider, error)
+	BuildPlugin(name string, code string, params []byte) error
 	Close()
 }
 
@@ -52,6 +53,12 @@ func NewSender(
 
 func (s *Sender) Init() error {
 	for pName, pCfg := range s.cfg.Providers {
+		pluginParams, _ := sonic.Marshal(pCfg.Params)
+		bPluginErr := s.pm.BuildPlugin(pName, pCfg.Provider, pluginParams)
+		if bPluginErr != nil {
+			return bPluginErr
+		}
+
 		regErr := s.wm.RegisterWorker(
 			pName,
 			retrier.NewWorker(s.ctx, s.sendFunc),
@@ -71,30 +78,21 @@ func (s *Sender) Init() error {
 }
 
 func (s *Sender) sendFunc(_ context.Context, payload []byte) (string, *retrier.ExecutionError) {
-	var task retrier.Task
-	taskUnmarshalErr := sonic.Unmarshal(payload, &task)
-	if taskUnmarshalErr != nil {
-		return "", &retrier.ExecutionError{
-			Err:   fmt.Errorf("task unmarshal payload: %s, err: %v", string(payload), taskUnmarshalErr),
-			State: retrier.CriticalState,
-		}
-	}
-
-	prv, getProviderErr := s.pm.GetProvider(task.Worker)
-	if getProviderErr != nil {
-		return "", &retrier.ExecutionError{
-			Err: fmt.Errorf("unknown provider: %s payload: %s, err: %v",
-				task.Worker, string(payload), getProviderErr),
-			State: retrier.CriticalState,
-		}
-	}
-
 	var msg dto.Message
-	getMsgErr := sonic.Unmarshal(task.Payload, &msg)
+	getMsgErr := sonic.Unmarshal(payload, &msg)
 	if getMsgErr != nil {
 		return "", &retrier.ExecutionError{
 			Err: fmt.Errorf("error unmarshal message task payload: %s, err: %v",
-				string(payload), getProviderErr),
+				string(payload), getMsgErr),
+			State: retrier.CriticalState,
+		}
+	}
+
+	prv, getProviderErr := s.pm.GetProvider(msg.Transport)
+	if getProviderErr != nil {
+		return "", &retrier.ExecutionError{
+			Err: fmt.Errorf("unknown provider: %s payload: %s, err: %v",
+				msg.Transport, string(payload), getProviderErr),
 			State: retrier.CriticalState,
 		}
 	}

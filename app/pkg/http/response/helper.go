@@ -17,7 +17,7 @@ func GetUUIDParam(key string, w http.ResponseWriter, r *http.Request) (uuid.UUID
 	}
 	cId, parseErr := uuid.Parse(params["id"])
 	if parseErr != nil {
-		slog.Error("wrong id: %s", params["id"])
+		slog.Error("wrong id", "id", params["id"])
 		WriteErrorResponse(w, http.StatusBadRequest, errors.New("wrong id"))
 		return uuid.Nil, errors.New("cannot parse param: " + key)
 	}

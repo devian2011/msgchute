@@ -50,4 +50,6 @@ type AdminHandlers struct {
 
 	MessageFinder   *admin.MessageFindHandler
 	MessageFindByID *admin.MessageFindByIDHandler
+
+	WorkerStatus *admin.WorkerStatusHandler
 }

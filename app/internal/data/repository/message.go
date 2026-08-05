@@ -55,8 +55,8 @@ func (r *MessageRepository) Create(ctx context.Context, m *dto.Message) error {
 			"deadline", "subject", "body", "status", "meta",
 		).
 		Values(
-			m.ID, m.SenderID, m.Transport, nullIfEmptyStr(m.Code),
-			m.Recipients, m.Params, m.Retry, nullIfZeroTime(m.Schedule),
+			m.ID, m.SenderID, m.Transport, m.Code,
+			m.Recipients, m.Params, m.Retry, m.Schedule,
 			m.Deadline, m.Subject, m.Body, status, m.Meta,
 		).
 		ToSql()
@@ -253,20 +253,4 @@ func (r *MessageRepository) UpdateStatus(ctx context.Context, id uuid.UUID, stat
 		return fmt.Errorf("update status: %w", err)
 	}
 	return nil
-}
-
-// ---- helpers ----
-
-func nullIfEmptyStr(s string) any {
-	if s == "" {
-		return nil
-	}
-	return s
-}
-
-func nullIfZeroTime(t interface{ IsZero() bool }) any {
-	if t.IsZero() {
-		return nil
-	}
-	return t
 }

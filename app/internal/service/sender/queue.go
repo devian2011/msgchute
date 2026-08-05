@@ -2,6 +2,7 @@ package sender
 
 import (
 	"context"
+	"log/slog"
 	"time"
 
 	"github.com/devian2011/retrier"
@@ -32,7 +33,6 @@ func (s *Queue) Add(message *dto.Message) (*dto.Message, *dto.Task, error) {
 	message.ID = generate.ID()
 	now := time.Now()
 
-	// Инициализируем Retry значениями по умолчанию, если он nil
 	if message.Retry == nil {
 		message.Retry = &dto.Retry{
 			Retries:  1,
@@ -52,9 +52,12 @@ func (s *Queue) Add(message *dto.Message) (*dto.Message, *dto.Task, error) {
 		MaxRetries:    message.Retry.Retries,
 		BackOffCode:   message.Retry.Strategy,
 		BackOffParams: message.Retry.Params,
-		CreatedAt:     now,
-		LastRun:       time.Time{},
-		NextRun:       now,
+		Deadline:      message.Deadline,
+		IsProcessed:   false,
+
+		CreatedAt: now,
+		LastRun:   time.Time{},
+		NextRun:   now,
 	}
 
 	if !message.Deadline.IsZero() {
@@ -62,18 +65,23 @@ func (s *Queue) Add(message *dto.Message) (*dto.Message, *dto.Task, error) {
 	}
 
 	getErr := storage.InTransaction(context.TODO(), s.db, func(ctx context.Context) error {
-		_, taskCreateErr := s.taskRepo.Create(ctx, task)
-		if taskCreateErr != nil {
-			return taskCreateErr
-		}
 		messageCreateErr := s.messageRepo.Create(ctx, message)
 		if messageCreateErr != nil {
+			slog.Error("Failed to create message", "error", messageCreateErr)
 			return messageCreateErr
 		}
+
+		_, taskCreateErr := s.taskRepo.Create(ctx, task)
+		if taskCreateErr != nil {
+			slog.Error("Failed to create task", "error", taskCreateErr)
+			return taskCreateErr
+		}
+
 		return nil
 	})
 
 	if getErr != nil {
+		slog.Error("Failed to add message to queue", "error", getErr.Error())
 		return nil, nil, getErr
 	}
 

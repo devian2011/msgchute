@@ -10,7 +10,7 @@ import (
 )
 
 type PreviewMessageRequest struct {
-	Code    string            `json:"code,omitempty" db:"code"`
+	Code    *string           `json:"code,omitempty" db:"code"`
 	Params  dto.MessageParams `json:"params,omitempty" db:"params"`
 	Subject string            `json:"subject" db:"subject"`
 	Body    string            `json:"body" db:"body"`
@@ -29,6 +29,7 @@ func NewMessagePreviewEndpoint(h PreviewHandler) *MessagePreviewEndpoint {
 }
 
 // ServeHTTP previews a message template before sending
+//
 //	@Summary		Preview message
 //	@Description	Accepts a raw message template along with dynamic parameters, renders them, and returns the final subject and body preview.
 //	@Tags			messages

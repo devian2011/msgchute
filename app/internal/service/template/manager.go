@@ -50,13 +50,13 @@ func (m *Manager) GenerateMessage(t *dto.Message) (subject string, body string, 
 		genBodyErr    error
 	)
 
-	if len(t.Code) > 0 {
-		tmpl, tmplGetErr := m.repo.GetByCode(context.Background(), t.Code)
+	if t.Code != nil && len(*t.Code) > 0 {
+		tmpl, tmplGetErr := m.repo.GetByCode(context.Background(), *t.Code)
 		if tmplGetErr != nil {
 			return "", "", fmt.Errorf("get template by code err: %w", tmplGetErr)
 		}
 		if tmpl == nil {
-			return "", "", fmt.Errorf("template with code: %s not exists", t.Code)
+			return "", "", fmt.Errorf("template with code: %s not exists", *t.Code)
 		}
 		tmplParams = tmpl.Params
 		bSubject = tmpl.Subject

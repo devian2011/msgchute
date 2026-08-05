@@ -77,7 +77,6 @@ func TestWorkerStore_GetTasks_Success(t *testing.T) {
 	msg1 := dto.Message{ID: msgID1, Subject: "subj1", Body: "body1"}
 	msg2 := dto.Message{ID: msgID2, Subject: "subj2", Body: "body2"}
 
-	// List возвращает map
 	taskMap := map[uuid.UUID][]dto.Task{
 		msgID1: {task1},
 		msgID2: {task2},
@@ -95,6 +94,9 @@ func TestWorkerStore_GetTasks_Success(t *testing.T) {
 		return (ids[0] == msgID1 && ids[1] == msgID2) || (ids[0] == msgID2 && ids[1] == msgID1)
 	})).Return([]dto.Message{msg1, msg2}, nil)
 
+	// Добавляем ожидание для Lock (без контекста, только ID)
+	taskRepo.On("Lock", mock.Anything).Return(nil).Once()
+
 	sqlMock.ExpectBegin()
 	sqlMock.ExpectCommit()
 
@@ -102,7 +104,6 @@ func TestWorkerStore_GetTasks_Success(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, tasks, 2)
 
-	// Проверяем, что задачи отсортированы по порядку из map (порядок не гарантирован, поэтому проверяем наличие)
 	found := 0
 	for _, task := range tasks {
 		if task.ID == taskID1 {

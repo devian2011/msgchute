@@ -7,7 +7,7 @@ import (
 )
 
 type Config struct {
-	Addr   string `env:"APP_HTTP_ADDR"`
+	Addr   string `yaml:"addr" env:"APP_HTTP_ADDR"`
 	Config struct {
 		ReadTimeout       time.Duration `env:"APP_HTTP_READ_TIMEOUT" yaml:"readTimeout"`
 		ReadHeaderTimeout time.Duration `env:"APP_HTTP_READ_HEAD_TIMEOUT" yaml:"readHeaderTimeout"`
