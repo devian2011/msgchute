@@ -1,5 +1,12 @@
 # MSGChute Notification Service
 
+<p align="center">
+  <img src="https://shields.io" alt="License">
+  <img src="https://shields.io" alt="Go Version">
+  <img src="https://shields.io" alt="Release">
+  <img src="https://shields.io" alt="CI Status">
+</p>
+
 A high-performance, fault-tolerant microservice written in **Go**, designed around a **push model** to aggregate, route, and deliver messages to external systems and communication channels (such as Email, Telegram, and others).
 
 Built from the ground up for reliable external integration, the service offers highly flexible options for sending both structured, dynamic templates and direct, raw notifications, backed by complete operational visibility.
