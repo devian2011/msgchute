@@ -1,4 +1,4 @@
-# MSGCute Notification Service
+# MSGChute Notification Service
 
 A high-performance, fault-tolerant microservice written in **Go**, designed around a **push model** to aggregate, route, and deliver messages to external systems and communication channels (such as Email, Telegram, and others).
 
