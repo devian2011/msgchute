@@ -1,84 +1,108 @@
-# Notification service configuration
+## Configuration Management
 
-### .env
+The service manages its application state using the following packages:
+* `"github.com/gookit/config/v2"` — Core configuration engine.
+* `"github.com/gookit/config/v2/yaml"` — YAML driver extension for parsing config files.
 
-```dotenv
-APP_HTTP_PORT=:8080
+### Configuration File Path
 
-APP_HTTP_WITH_SWAGGER=true
+By default, the application looks for a configuration file in its standard directory. You can explicitly override and pass a custom configuration path using the `-config` CLI flag:
 
-APP_CONFIG_PATH=./config/config.yml
-
-# -------
-# Store
-# -------
-POSTGRES_DB=notifier
-POSTGRES_USER=notifier
-POSTGRES_PASSWORD=notifier
-POSTGRES_HOST=db.notifier.local
-POSTGRES_PORT=15432
-
-APP_DB_DSN=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}?sslmode=disable
-APP_DB_DRIVER=pgx
-APP_DB_MIGRATION_DIR=./migrations
-
+```bash
+./notifier -config /path/to/config.yaml
 ```
 
-### config.yaml
+### Environment Variables & Secrets
 
-Application supports many transports. You can use multiple smtp, file and other transports.
+To maintain security best practices and keep production configurations clean:
+* **Environment Variables**: Sensitive values or application overrides can be injected directly via system environment variables (`ENV`).
+* **Dotenv Support**: For local development or isolated containers, the service automatically loads secrets from a `.env` file located in the root directory.
+
+### Example
 
 ```yaml
+# ==============================================================================
+# NOTIFICATION SERVICE CONFIGURATION TEMPLATE
+# ==============================================================================
+
+# HTTP Server Configuration
 http:
-  port: ${APP_HTTP_PORT}
+  # Network address and port for the HTTP API gateway (e.g., "0.0.0.0:8080")
+  addr: ${APP_HTTP_ADDR}
+  # Toggle to serve Swagger UI documentation endpoint (/swagger/*)
   withSwagger: false
   config:
+    # Maximum duration for reading the entire incoming request body
     readTimeout: ${APP_HTTP_READ_TIMEOUT|1s}
+    # Amount of time allowed to read request headers
     readHeaderTimeout: ${APP_HTTP_READ_HEADER_TIMEOUT|1s}
+    # Maximum duration before timing out writes of the response
     writeTimeout: ${APP_HTTP_WRITE_TIMEOUT|2s}
   tls:
+    # Path to the SSL/TLS certificate file (leave blank to disable HTTPS)
     cert: ${APP_HTTP_TLS_CERT}
+    # Path to the SSL/TLS private key file
     key: ${APP_HTTP_TLS_KEY}
+
+# Database & Migrations Configuration
 db:
+  # Database Connection String (Data Source Name)
   dsn: ${APP_DB_DSN}
+  # SQL driver name (defaults to 'pgx' for PostgreSQL)
   driver: ${APP_DB_DRIVER|pgx}
+  # Directory where database schema .sql migration files are stored
   migrationDir: ${APP_DB_MIGRATION_DIR|./migrations}
+
+# Core Messaging Engine & Plugins Lifecycle Configuration
 providers:
+  # Maximum number of outgoing messages allowed to sit in the internal buffer queue
   maxBufferSize: 1000
+  # Duration the engine waits to grab a notification task from the internal queue
   fetchTaskTimeout: 2s
+
+  # HashiCorp go-plugin Registry
+  # Maps a provider type alias to its respective compiled sub-process binary file path
   pluginMap:
     telegram: ./plugins/dist/providers/tg
     smtp: ./plugins/dist/providers/smtp
+
+  # Active Provider Instances Configuration
   providers:
+    # --------------------------------------------------------------------------
+    # SMTP (Email) Instance Example: Gmail
+    # --------------------------------------------------------------------------
     gmail:
-      provider: smtp
+      provider: smtp        # References the underlying plugin defined in pluginMap
       settings:
-        workers:
-          min: 2
-          max: 6
-        breaker:
-          windowSize: 10m
-          minRequests: 100
-          failureThreshold: 0.5
-          timeout: 5m
-      params:
+        workers:            # Worker pool for scaling concurrent SMTP dispatches
+          min: 2            # Minimum active persistent background senders
+          max: 6            # Maximum allowed concurrent background senders under load
+        breaker:            # Circuit Breaker fail-safe metrics
+          windowSize: 10m   # Time window used to aggregate failure statistics
+          minRequests: 100  # Minimum request volume required to evaluate the breaker status
+          failureThreshold: 0.5 # Trips the breaker if more than 50% of requests fail
+          timeout: 5m       # Sleep window duration to block requests before attempting a retry
+      params:               # JSON-serialized payload sent directly to the SMTP plugin's Configure method
         host: smtp.gmail.com
         port: 587
         user: user
         password: password
         from: mail@example.com
+
+    # --------------------------------------------------------------------------
+    # Telegram Messenger Bot Instance
+    # --------------------------------------------------------------------------
     tg:
-      provider: telegram
+      provider: telegram    # References the underlying plugin defined in pluginMap
       settings:
-        workers:
+        workers:            # Worker pool matching strict Telegram API rate bounds
           min: 2
           max: 2
-        breaker:
+        breaker:            # Circuit Breaker tailored for aggressive rate-limiting APIs
           windowSize: 10m
           minRequests: 100
-          failureThreshold: 0.3
+          failureThreshold: 0.3 # Strips early (30% failure rate) to protect bot API reputation
           timeout: 5m
-      params:
-        token:
-
+      params:               # JSON-serialized payload sent directly to the Telegram plugin's Configure method
+        token: ${TELEGRAM_BOT_TOKEN} # Safe injection placeholder for sensitive bot credentials
 ```
