@@ -1,10 +1,10 @@
-FROM golang:latest as builder
+FROM golang:latest AS builder
 
 RUN mkdir -p /app
 WORKDIR /app
-COPY /app/go.mod /app
+COPY go.mod go.sum ./
 RUN go mod download
-COPY /app /app
+COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main ./cmd/main/main.go
 
 FROM alpine:latest
