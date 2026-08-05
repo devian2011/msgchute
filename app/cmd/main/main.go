@@ -12,8 +12,15 @@ import (
 	"github.com/devian2011/msgchute/internal"
 )
 
+// @title						Notification service API
+// @version					    1.0
+// @description				    HTTP API for send any messages
+// @BasePath					/
+// @securityDefinitions.apikey	Authorization: Bearer <token>
+// @in							header
+// @name						Authorization
 func main() {
-	cfgFilePath := flag.String("config", "./config/config.yaml", "config file path")
+	cfgFilePath := flag.String("config", "./config/config.yml", "config file path")
 	flag.Parse()
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM, syscall.SIGABRT)

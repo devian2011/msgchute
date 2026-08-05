@@ -43,7 +43,7 @@ func (h *TemplateUpdateHandler) Handle(t *dto.Template) (*dto.Template, error) {
 // Find handler
 
 type templateFinder interface {
-	Find(filter *dto.MessageTemplateFilter) ([]*dto.Template, uint64, error)
+	Find(filter *dto.MessageTemplateFilter) (map[string]*dto.Template, uint64, error)
 }
 
 type TemplateFinderHandler struct {
@@ -54,6 +54,6 @@ func NewTemplateFinderHandler(finder templateFinder) *TemplateFinderHandler {
 	return &TemplateFinderHandler{finder: finder}
 }
 
-func (h *TemplateFinderHandler) Handle(filter *dto.MessageTemplateFilter) ([]*dto.Template, uint64, error) {
+func (h *TemplateFinderHandler) Handle(filter *dto.MessageTemplateFilter) (map[string]*dto.Template, uint64, error) {
 	return h.finder.Find(filter)
 }

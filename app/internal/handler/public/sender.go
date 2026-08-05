@@ -12,6 +12,10 @@ type SenderHandler struct {
 	q queue
 }
 
+func NewSenderHandler(q queue) *SenderHandler {
+	return &SenderHandler{q: q}
+}
+
 func (h *SenderHandler) Handle(msg *dto.Message) (*dto.Message, *dto.Task, error) {
 	return h.q.Add(msg)
 }

@@ -34,4 +34,5 @@ migrate:
 	docker run --rm -it --network=notifier -v "$(PWD)/migrations:/db/migrations" -e DATABASE_URL=$(APP_DB_DSN) --env-file=.env ghcr.io/amacneil/dbmate $(command)
 
 swagger:
-	swag init -g ./app/cmd/main/main.go && swag fmt ./app/...
+	swag init -d ./app -g cmd/main/main.go -o ./app/docs --parseDependency --parseInternal && swag fmt ./app/...
+

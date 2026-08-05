@@ -1,0 +1,567 @@
+basePath: /
+definitions:
+  github_com_devian2011_msgchute_internal_dto.BackOffParams:
+    additionalProperties: true
+    type: object
+  github_com_devian2011_msgchute_internal_dto.FullMessageInfo:
+    properties:
+      message:
+        $ref: '#/definitions/github_com_devian2011_msgchute_internal_dto.Message'
+      tasks:
+        items:
+          $ref: '#/definitions/github_com_devian2011_msgchute_internal_dto.FullTask'
+        type: array
+    type: object
+  github_com_devian2011_msgchute_internal_dto.FullTask:
+    properties:
+      results:
+        items:
+          $ref: '#/definitions/github_com_devian2011_msgchute_internal_dto.TaskExecutionResult'
+        type: array
+      task:
+        $ref: '#/definitions/github_com_devian2011_msgchute_internal_dto.Task'
+    type: object
+  github_com_devian2011_msgchute_internal_dto.Message:
+    properties:
+      body:
+        type: string
+      code:
+        description: Code template code
+        type: string
+      deadline:
+        type: string
+      id:
+        type: string
+      metadata:
+        allOf:
+        - $ref: '#/definitions/github_com_devian2011_msgchute_internal_dto.MessageMeta'
+        description: Meta some additional fields like CC Bcc or Files etc.
+      params:
+        allOf:
+        - $ref: '#/definitions/github_com_devian2011_msgchute_internal_dto.MessageParams'
+        description: Params message params for generate templates
+      recipients:
+        items:
+          type: string
+        type: array
+      retry:
+        $ref: '#/definitions/github_com_devian2011_msgchute_internal_dto.Retry'
+      schedule:
+        type: string
+      sender_id:
+        type: string
+      status:
+        $ref: '#/definitions/github_com_devian2011_msgchute_internal_dto.MessageStatus'
+      subject:
+        type: string
+      transport:
+        description: Transport message provider
+        type: string
+    type: object
+  github_com_devian2011_msgchute_internal_dto.MessageMeta:
+    additionalProperties: {}
+    type: object
+  github_com_devian2011_msgchute_internal_dto.MessageParam:
+    properties:
+      value: {}
+    type: object
+  github_com_devian2011_msgchute_internal_dto.MessageParams:
+    additionalProperties:
+      $ref: '#/definitions/github_com_devian2011_msgchute_internal_dto.MessageParam'
+    type: object
+  github_com_devian2011_msgchute_internal_dto.MessagePreview:
+    properties:
+      body:
+        type: string
+      subject:
+        type: string
+    type: object
+  github_com_devian2011_msgchute_internal_dto.MessageStatus:
+    enum:
+    - running
+    - succeeded
+    - failed
+    - declined
+    type: string
+    x-enum-varnames:
+    - MessageStatusRunning
+    - MessageStatusSucceeded
+    - MessageStatusFailed
+    - MessageStatusDeclined
+  github_com_devian2011_msgchute_internal_dto.Retry:
+    properties:
+      params:
+        additionalProperties: {}
+        type: object
+      retries:
+        type: integer
+      strategy:
+        type: string
+    type: object
+  github_com_devian2011_msgchute_internal_dto.Task:
+    properties:
+      backoff_code:
+        type: string
+      backoff_params:
+        $ref: '#/definitions/github_com_devian2011_msgchute_internal_dto.BackOffParams'
+      created_at:
+        type: string
+      deadline:
+        type: string
+      id:
+        type: string
+      is_processed:
+        type: boolean
+      last_run:
+        type: string
+      max_retries:
+        type: integer
+      message_id:
+        type: string
+      next_run:
+        type: string
+      retries:
+        type: integer
+      status:
+        $ref: '#/definitions/retrier.TaskStatus'
+      worker:
+        type: string
+    type: object
+  github_com_devian2011_msgchute_internal_dto.TaskExecutionResult:
+    properties:
+      execution_time:
+        $ref: '#/definitions/time.Duration'
+      id:
+        type: string
+      is_critical:
+        type: boolean
+      result:
+        items:
+          type: integer
+        type: array
+      run_at:
+        type: string
+      status:
+        $ref: '#/definitions/retrier.TaskStatus'
+      task_id:
+        type: string
+    type: object
+  github_com_devian2011_msgchute_internal_dto.Template:
+    properties:
+      body:
+        type: string
+      code:
+        type: string
+      description:
+        type: string
+      name:
+        type: string
+      params:
+        $ref: '#/definitions/github_com_devian2011_msgchute_internal_dto.TemplateParams'
+      subject:
+        type: string
+    type: object
+  github_com_devian2011_msgchute_internal_dto.TemplateParam:
+    properties:
+      default:
+        type: string
+    type: object
+  github_com_devian2011_msgchute_internal_dto.TemplateParams:
+    additionalProperties:
+      $ref: '#/definitions/github_com_devian2011_msgchute_internal_dto.TemplateParam'
+    type: object
+  github_com_devian2011_msgchute_pkg_http_pagination.PageData:
+    properties:
+      current_page:
+        type: integer
+      per_page:
+        type: integer
+      total:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
+  github_com_devian2011_msgchute_pkg_http_response.Response:
+    properties:
+      data: {}
+      error:
+        type: string
+      status:
+        type: string
+    type: object
+  internal_io_web_endpoint_admin.MessageFinderResponse:
+    properties:
+      messages:
+        items:
+          $ref: '#/definitions/github_com_devian2011_msgchute_internal_dto.FullMessageInfo'
+        type: array
+      pagination:
+        $ref: '#/definitions/github_com_devian2011_msgchute_pkg_http_pagination.PageData'
+    type: object
+  internal_io_web_endpoint_admin.TemplateFinderResult:
+    properties:
+      pagination:
+        $ref: '#/definitions/github_com_devian2011_msgchute_pkg_http_pagination.PageData'
+      templates:
+        additionalProperties:
+          $ref: '#/definitions/github_com_devian2011_msgchute_internal_dto.Template'
+        type: object
+    type: object
+  internal_io_web_endpoint_public.PreviewMessageRequest:
+    properties:
+      body:
+        type: string
+      code:
+        type: string
+      params:
+        $ref: '#/definitions/github_com_devian2011_msgchute_internal_dto.MessageParams'
+      subject:
+        type: string
+    type: object
+  internal_io_web_endpoint_public.SenderResponse:
+    properties:
+      message:
+        $ref: '#/definitions/github_com_devian2011_msgchute_internal_dto.Message'
+      task:
+        $ref: '#/definitions/github_com_devian2011_msgchute_internal_dto.Task'
+    type: object
+  retrier.TaskStatus:
+    enum:
+    - pending
+    - success
+    - failure
+    type: string
+    x-enum-varnames:
+    - StatusPending
+    - StatusSuccess
+    - StatusFailure
+  time.Duration:
+    enum:
+    - -9223372036854775808
+    - 9223372036854775807
+    - 1
+    - 1000
+    - 1000000
+    - 1000000000
+    - 60000000000
+    - 3600000000000
+    type: integer
+    x-enum-varnames:
+    - minDuration
+    - maxDuration
+    - Nanosecond
+    - Microsecond
+    - Millisecond
+    - Second
+    - Minute
+    - Hour
+info:
+  contact: {}
+  description: HTTP API for send any messages
+  title: Notification service API
+  version: "1.0"
+paths:
+  /api/admin/v1/message:
+    get:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: Retrieves a paginated list of messages filtered by status, IDs,
+        recipients, senders, codes, or transports.
+      parameters:
+      - default: 1
+        description: Page number for pagination
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Number of items per page
+        in: query
+        name: per_page
+        type: integer
+      - description: Field to sort by
+        in: query
+        name: sort
+        type: string
+      - description: Sort order direction (asc/desc)
+        in: query
+        name: order
+        type: string
+      - collectionFormat: multi
+        description: Filter by message status array
+        in: query
+        items:
+          type: string
+        name: status
+        type: array
+      - collectionFormat: multi
+        description: Filter by message UUID array
+        in: query
+        items:
+          type: string
+        name: ids
+        type: array
+      - collectionFormat: multi
+        description: Filter by recipient array
+        in: query
+        items:
+          type: string
+        name: recipient
+        type: array
+      - collectionFormat: multi
+        description: Filter by sender ID array
+        in: query
+        items:
+          type: string
+        name: sender_ids
+        type: array
+      - collectionFormat: multi
+        description: Filter by message code array
+        in: query
+        items:
+          type: string
+        name: code
+        type: array
+      - collectionFormat: multi
+        description: Filter by transport type array
+        in: query
+        items:
+          type: string
+        name: transport
+        type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of filtered messages with pagination metadata
+          schema:
+            $ref: '#/definitions/internal_io_web_endpoint_admin.MessageFinderResponse'
+        "400":
+          description: Invalid query parameters or form parsing failure
+          schema:
+            $ref: '#/definitions/github_com_devian2011_msgchute_pkg_http_response.Response'
+        "500":
+          description: Internal server error while searching for records
+          schema:
+            $ref: '#/definitions/github_com_devian2011_msgchute_pkg_http_response.Response'
+      summary: List and filter messages
+      tags:
+      - admin-messages
+  /api/admin/v1/message/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves full message details for a specific record via its UUID.
+      parameters:
+      - description: Unique message UUID identifier
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Detailed structural message metadata
+          schema:
+            $ref: '#/definitions/github_com_devian2011_msgchute_internal_dto.FullMessageInfo'
+        "400":
+          description: Invalid or malformed UUID parameter format
+          schema:
+            $ref: '#/definitions/github_com_devian2011_msgchute_pkg_http_response.Response'
+        "500":
+          description: Internal server error or record resolution failure
+          schema:
+            $ref: '#/definitions/github_com_devian2011_msgchute_pkg_http_response.Response'
+      summary: Get message by ID
+      tags:
+      - admin-messages
+  /api/admin/v1/template:
+    get:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: Retrieves a paginated collection of message templates filtered
+        by system code arrays or full-text query matches.
+      parameters:
+      - default: 1
+        description: Page index parameter
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Page item capacity limit
+        in: query
+        name: per_page
+        type: integer
+      - description: Target field criteria for ordering records
+        in: query
+        name: sort
+        type: string
+      - description: Ascending or descending order selection (asc/desc)
+        in: query
+        name: order
+        type: string
+      - collectionFormat: multi
+        description: Filter metrics by unique message system code tokens
+        in: query
+        items:
+          type: string
+        name: code
+        type: array
+      - description: Generic phrase match expression matching structural text
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Key-value dictionary mapping matching code IDs to schema definitions
+          schema:
+            $ref: '#/definitions/internal_io_web_endpoint_admin.TemplateFinderResult'
+        "400":
+          description: Query validation or structured query parameter parse errors
+          schema:
+            $ref: '#/definitions/github_com_devian2011_msgchute_pkg_http_response.Response'
+        "500":
+          description: Internal catalog resolution context errors
+          schema:
+            $ref: '#/definitions/github_com_devian2011_msgchute_pkg_http_response.Response'
+      summary: List and filter templates
+      tags:
+      - admin-templates
+    post:
+      consumes:
+      - application/json
+      description: Creates and stores a completely new message configuration blueprint
+        in the repository.
+      parameters:
+      - description: Structural definition specification metrics payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_devian2011_msgchute_internal_dto.Template'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Newly registered template model confirmation metadata
+          schema:
+            $ref: '#/definitions/github_com_devian2011_msgchute_internal_dto.Template'
+        "400":
+          description: Corrupted JSON payload body formatting syntax exception
+          schema:
+            $ref: '#/definitions/github_com_devian2011_msgchute_pkg_http_response.Response'
+        "500":
+          description: Persistence system errors encountered storing details
+          schema:
+            $ref: '#/definitions/github_com_devian2011_msgchute_pkg_http_response.Response'
+      summary: Create a template
+      tags:
+      - admin-templates
+  /api/admin/v1/template/{code}:
+    put:
+      consumes:
+      - application/json
+      description: Modifies variables, subjects, or raw body layouts of an existing
+        layout found by its explicit target code route component.
+      parameters:
+      - description: Target identifying tracking code token context
+        in: path
+        name: code
+        required: true
+        type: string
+      - description: Updatable structural model fields
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_devian2011_msgchute_internal_dto.Template'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Refreshed schema specifications entry state details
+          schema:
+            $ref: '#/definitions/github_com_devian2011_msgchute_internal_dto.Template'
+        "400":
+          description: Invalid path payload reference parameters or corrupt body markup
+            values
+          schema:
+            $ref: '#/definitions/github_com_devian2011_msgchute_pkg_http_response.Response'
+        "500":
+          description: Database or engine exceptions processing modified models
+          schema:
+            $ref: '#/definitions/github_com_devian2011_msgchute_pkg_http_response.Response'
+      summary: Update a template
+      tags:
+      - admin-templates
+  /api/v1/preview:
+    post:
+      consumes:
+      - application/json
+      description: Accepts a raw message template along with dynamic parameters, renders
+        them, and returns the final subject and body preview.
+      parameters:
+      - description: Message template definition and rendering context
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_io_web_endpoint_public.PreviewMessageRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Template successfully rendered
+          schema:
+            $ref: '#/definitions/github_com_devian2011_msgchute_internal_dto.MessagePreview'
+        "400":
+          description: Invalid JSON payload or syntax error
+          schema:
+            $ref: '#/definitions/github_com_devian2011_msgchute_pkg_http_response.Response'
+        "500":
+          description: Internal server error during template rendering
+          schema:
+            $ref: '#/definitions/github_com_devian2011_msgchute_pkg_http_response.Response'
+      summary: Preview message
+      tags:
+      - messages
+  /api/v1/send:
+    post:
+      consumes:
+      - application/json
+      description: Accepts a message payload, processes its delivery, and registers
+        the tracking task.
+      parameters:
+      - description: Message details to be processed and sent
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_devian2011_msgchute_internal_dto.Message'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Message processed and delivery task created successfully
+          schema:
+            $ref: '#/definitions/internal_io_web_endpoint_public.SenderResponse'
+        "400":
+          description: Invalid JSON payload or structural error
+          schema:
+            $ref: '#/definitions/github_com_devian2011_msgchute_pkg_http_response.Response'
+        "500":
+          description: Internal server error during processing or delivery dispatch
+          schema:
+            $ref: '#/definitions/github_com_devian2011_msgchute_pkg_http_response.Response'
+      summary: Send message
+      tags:
+      - messages
+securityDefinitions:
+  'Authorization: Bearer <token>':
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

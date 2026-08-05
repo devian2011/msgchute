@@ -28,7 +28,7 @@ func GetPageDataFromRequest(r *http.Request) (page, perPage uint64) {
 
 	perPage, parseErr = strconv.ParseUint(perPageStr, 10, 64)
 	if parseErr != nil {
-		perPage = 30
+		perPage = 20
 	}
 
 	return page, perPage

@@ -35,11 +35,11 @@ CREATE TABLE IF NOT EXISTS messages
     body          TEXT          NOT NULL
 );
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_messages_template_code ON messages (template_code);
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_messages_status ON messages (status);
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_messages_sender_id ON messages(sender_id);
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_messages_transport ON messages(transport);
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_messages_recipients_gin ON messages USING GIN (recipients);
+CREATE INDEX IF NOT EXISTS idx_messages_template_code ON messages (template_code);
+CREATE INDEX IF NOT EXISTS idx_messages_status ON messages (status);
+CREATE INDEX IF NOT EXISTS idx_messages_sender_id ON messages(sender_id);
+CREATE INDEX IF NOT EXISTS idx_messages_transport ON messages(transport);
+CREATE INDEX IF NOT EXISTS idx_messages_recipients_gin ON messages USING GIN (recipients);
 
 
 CREATE TABLE IF NOT EXISTS tasks
@@ -62,12 +62,12 @@ CREATE TABLE IF NOT EXISTS tasks
     next_run       TIMESTAMP WITH TIME ZONE          DEFAULT NULL
 );
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_tasks_next_run_id_pending
+CREATE INDEX IF NOT EXISTS idx_tasks_next_run_id_pending
     ON tasks (next_run, id)
     WHERE status = 'pending';
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_tasks_message_id ON tasks (message_id);
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_tasks_status ON tasks (status);
+CREATE INDEX IF NOT EXISTS idx_tasks_message_id ON tasks (message_id);
+CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks (status);
 
 CREATE TABLE IF NOT EXISTS task_execution_results
 (
@@ -82,8 +82,8 @@ CREATE TABLE IF NOT EXISTS task_execution_results
     execution_time INTERVAL                 NOT NULL
 );
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_task_execution_results_task_id ON task_execution_results (task_id);
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_task_execution_results_status ON task_execution_results (status);
+CREATE INDEX IF NOT EXISTS idx_task_execution_results_task_id ON task_execution_results (task_id);
+CREATE INDEX IF NOT EXISTS idx_task_execution_results_status ON task_execution_results (status);
 
 
 -- migrate:down

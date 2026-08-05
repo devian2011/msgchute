@@ -16,7 +16,7 @@ func GetSortFromRequest(r *http.Request) Sort {
 	}
 	sortOrder := r.URL.Query().Get("order")
 	if len(sortOrder) == 0 {
-		sortOrder = "desc"
+		sortOrder = "DESC"
 	}
 
 	return Sort{Field: sortBy, Order: sortOrder}

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/devian2011/msgchute/internal/bootstrap"
+	"github.com/devian2011/msgchute/internal/io/web/route"
 	"github.com/devian2011/msgchute/internal/registry"
 )
 
@@ -29,6 +30,15 @@ func NewApp(ctx context.Context, configPath string) (*App, error) {
 
 func (a *App) Run() error {
 	errChan := make(chan error)
+
+	initErr := a.r.Services.Sender.Init()
+	if initErr != nil {
+		return initErr
+	}
+	a.r.Services.Sender.Run()
+
+	route.RegisterRoutes(a.r.Http, a.r.Handlers, a.r.Middlewares)
+	go a.r.Http.Run(errChan)
 
 	select {
 	case <-a.ctx.Done():
@@ -58,7 +68,6 @@ func (a *App) shutdown() error {
 	a.r.AuthProvider.Close()
 
 	slog.Info("plugin sub-processes terminated successfully")
-
 	slog.Info("all application resources released. goodbye!")
 	return nil
 }

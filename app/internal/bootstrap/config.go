@@ -14,10 +14,13 @@ import (
 func loadConfig(cfgFilePath string) (*Config, error) {
 	_ = godotenv.Load()
 
-	config.WithOptions(config.ParseEnv)
-	config.WithOptions(func(opt *config.Options) {
-		opt.DecoderConfig.TagName = "config"
-	})
+	config.WithOptions(
+		config.ParseEnv,
+		config.ParseTime,
+		func(opt *config.Options) {
+			opt.DecoderConfig.TagName = "yaml"
+		},
+	)
 	config.AddDriver(yaml.Driver)
 	loadCfgErr := config.LoadFiles(cfgFilePath)
 	if loadCfgErr != nil {

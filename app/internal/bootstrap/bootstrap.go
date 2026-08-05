@@ -7,6 +7,8 @@ import (
 	"github.com/devian2011/retrier"
 
 	"github.com/devian2011/msgchute/internal/data/repository"
+	"github.com/devian2011/msgchute/internal/handler/admin"
+	"github.com/devian2011/msgchute/internal/handler/public"
 	"github.com/devian2011/msgchute/internal/io/storage"
 	"github.com/devian2011/msgchute/internal/io/web"
 	"github.com/devian2011/msgchute/internal/registry"
@@ -66,6 +68,13 @@ func Bootstrap(ctx context.Context, cfgFilePath string) (*registry.AppRegistry, 
 		ctx, workerStore, &sender.Logger{}, retrier.NewBackOffStrategy(),
 		cfg.Providers.MaxBufferSize, cfg.Providers.FetchTaskTimeout, eventBus)
 
+	// Message finder
+	msgFinder := message.NewFinder(db, msgRepo, taskRepo, taskResultRepo)
+
+	// msgSender
+	msgSender := sender.NewSender(ctx, cfg.Providers, providerManager, workerManager, tmplMgr)
+	msgQueue := sender.NewQueue(ctx, db, taskRepo, msgRepo)
+
 	return &registry.AppRegistry{
 		DB:           db,
 		Http:         httpSrv,
@@ -75,14 +84,28 @@ func Bootstrap(ctx context.Context, cfgFilePath string) (*registry.AppRegistry, 
 		},
 		Services: &registry.Services{
 			EventBus:    eventBus,
-			Sender:      sender.NewSender(ctx, cfg.Providers, providerManager, workerManager, tmplMgr),
-			SenderQueue: sender.NewQueue(ctx, db, taskRepo, msgRepo),
+			Sender:      msgSender,
+			SenderQueue: msgQueue,
+		},
+		Handlers: &registry.Handlers{
+			Public: &registry.PublicHandlers{
+				Sender:  public.NewSenderHandler(msgQueue),
+				Preview: public.NewPreviewHandler(tmplMgr),
+			},
+			Admin: &registry.AdminHandlers{
+				TemplateCreator: admin.NewTemplateCreateHandler(tmplMgr),
+				TemplateUpdater: admin.NewTemplateUpdateHandler(tmplMgr),
+				TemplateFinder:  admin.NewTemplateFinderHandler(tmplMgr),
+
+				MessageFinder:   admin.NewMessageFindHandler(msgFinder),
+				MessageFindByID: admin.NewMessageFindByIDHandler(msgFinder),
+			},
 		},
 	}, nil
 }
 
 func initAuth(ctx context.Context, cfg *auth.Config) (*auth.Provider, *auth.HttpMiddleware, error) {
-	if len(cfg.Plugin) == 0 {
+	if cfg == nil || len(cfg.Plugin) == 0 {
 		return nil, auth.NewMiddleware(&auth.EmptyAuthProvider{}), nil
 	}
 

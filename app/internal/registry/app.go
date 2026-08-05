@@ -47,4 +47,7 @@ type AdminHandlers struct {
 	TemplateCreator *admin.TemplateCreateHandler
 	TemplateUpdater *admin.TemplateUpdateHandler
 	TemplateFinder  *admin.TemplateFinderHandler
+
+	MessageFinder   *admin.MessageFindHandler
+	MessageFindByID *admin.MessageFindByIDHandler
 }

@@ -38,10 +38,12 @@ func managementAPI(r *mux.Router, handlers *registry.Handlers) *mux.Router {
 		Methods(http.MethodGet)
 	r.Handle("/api/admin/v1/template", admin.NewTemplateCreationEndpoint(handlers.Admin.TemplateCreator)).
 		Methods(http.MethodPost)
-	r.Handle("/api/admin/v1/template/{id}", admin.NewTemplateUpdateEndpoint(handlers.Admin.TemplateUpdater)).
+	r.Handle("/api/admin/v1/template/{code}", admin.NewTemplateUpdateEndpoint(handlers.Admin.TemplateUpdater)).
 		Methods(http.MethodPut)
 
-	r.Handle("/api/admin/v1/message", admin.NewMessageFinderEndpoint()).
+	r.Handle("/api/admin/v1/message", admin.NewMessageFinderEndpoint(handlers.Admin.MessageFinder)).
+		Methods(http.MethodGet)
+	r.Handle("/api/admin/v1/message/{id}", admin.NewMessageFinderByIDEndpoint(handlers.Admin.MessageFindByID)).
 		Methods(http.MethodGet)
 
 	return r

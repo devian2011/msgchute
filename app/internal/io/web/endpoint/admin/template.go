@@ -1,26 +1,106 @@
 package admin
 
 import (
+	"fmt"
 	"net/http"
 
+	"github.com/bytedance/sonic"
+	"github.com/go-playground/form"
+
 	"github.com/devian2011/msgchute/internal/dto"
+	"github.com/devian2011/msgchute/pkg/http/pagination"
+	"github.com/devian2011/msgchute/pkg/http/response"
+	"github.com/devian2011/msgchute/pkg/http/sort"
 )
 
-// Template finder
+// TemplateFinderHandler Template finder
+
+type TemplateFinderResult struct {
+	Templates  map[string]*dto.Template `json:"templates"`
+	Pagination pagination.PageData      `json:"pagination"`
+}
+
+type TemplateFilterRequest struct {
+	Code   []string `form:"code"`
+	Search *string  `form:"search"`
+}
+
 type TemplateFinderHandler interface {
-	Handle(filter *dto.MessageTemplateFilter) ([]*dto.Template, uint64, error)
+	Handle(filter *dto.MessageTemplateFilter) (map[string]*dto.Template, uint64, error)
 }
 
 type TemplateFinderEndpoint struct {
-	h TemplateFinderHandler
+	h       TemplateFinderHandler
+	decoder *form.Decoder
 }
 
 func NewTemplateFinderEndpoint(h TemplateFinderHandler) *TemplateFinderEndpoint {
-	return &TemplateFinderEndpoint{h: h}
+	return &TemplateFinderEndpoint{
+		h:       h,
+		decoder: form.NewDecoder(),
+	}
 }
 
+// ServeHTTP lists and filters message templates
+//	@Summary		List and filter templates
+//	@Description	Retrieves a paginated collection of message templates filtered by system code arrays or full-text query matches.
+//	@Tags			admin-templates
+//	@Accept			x-www-form-urlencoded
+//	@Produce		json
+//	@Param			page		query		int						false	"Page index parameter"		default(1)
+//	@Param			per_page	query		int						false	"Page item capacity limit"	default(10)
+//	@Param			sort		query		string					false	"Target field criteria for ordering records"
+//	@Param			order		query		string					false	"Ascending or descending order selection (asc/desc)"
+//	@Param			code		query		[]string				false	"Filter metrics by unique message system code tokens"	collectionFormat(multi)
+//	@Param			search		query		string					false	"Generic phrase match expression matching structural text"
+//	@Success		200			{object}	TemplateFinderResult	"Key-value dictionary mapping matching code IDs to schema definitions"
+//	@Failure		400			{object}	response.Response		"Query validation or structured query parameter parse errors"
+//	@Failure		500			{object}	response.Response		"Internal catalog resolution context errors"
+//	@Router			/api/admin/v1/template [get]
 func (e *TemplateFinderEndpoint) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	page, perPage := pagination.GetPageDataFromRequest(r)
+	limit, offset := pagination.GetLimitsByPage(page, perPage)
+	respSort := sort.GetSortFromRequest(r)
 
+	// Default respSort.Field == code
+	if respSort.Field == "id" {
+		respSort.Field = "code"
+	}
+
+	filter := &dto.MessageTemplateFilter{
+		Limit:     limit,
+		Offset:    offset,
+		SortField: &respSort.Field,
+		SortOrder: &respSort.Order,
+	}
+
+	if parseFormErr := r.ParseForm(); parseFormErr != nil {
+		response.WriteErrorResponse(w, http.StatusBadRequest, parseFormErr)
+		return
+	}
+	var filterRequest TemplateFilterRequest
+	if err := e.decoder.Decode(&filterRequest, r.Form); err != nil {
+		http.Error(w, "Invalid query parameters", http.StatusBadRequest)
+		return
+	}
+
+	filter.Code = filterRequest.Code
+	filter.Search = filterRequest.Search
+
+	templates, totalCnt, getErr := e.h.Handle(filter)
+	if getErr != nil {
+		response.WriteErrorResponse(w, http.StatusInternalServerError, getErr)
+		return
+	}
+	response.WriteSuccessResponse(w, http.StatusOK, TemplateFinderResult{
+		Templates: templates,
+		Pagination: pagination.PageData{
+			CurrentPage: page,
+			PerPage:     perPage,
+			Total:       totalCnt,
+			TotalPages:  uint64(pagination.GetPageCount(int(totalCnt), int(perPage))),
+		},
+	})
 }
 
 // Template creation
@@ -36,8 +116,29 @@ func NewTemplateCreationEndpoint(h TemplateCreationHandler) *TemplateCreationEnd
 	return &TemplateCreationEndpoint{h: h}
 }
 
+// ServeHTTP registers a new message template definitions model
+//	@Summary		Create a template
+//	@Description	Creates and stores a completely new message configuration blueprint in the repository.
+//	@Tags			admin-templates
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		dto.Template		true	"Structural definition specification metrics payload"
+//	@Success		200		{object}	dto.Template		"Newly registered template model confirmation metadata"
+//	@Failure		400		{object}	response.Response	"Corrupted JSON payload body formatting syntax exception"
+//	@Failure		500		{object}	response.Response	"Persistence system errors encountered storing details"
+//	@Router			/api/admin/v1/template [post]
 func (e *TemplateCreationEndpoint) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-
+	var template *dto.Template
+	if encodeErr := sonic.ConfigDefault.NewDecoder(r.Body).Decode(&template); encodeErr != nil {
+		response.WriteErrorResponse(w, http.StatusBadRequest, encodeErr)
+		return
+	}
+	tmpl, createErr := e.h.Handle(template)
+	if createErr != nil {
+		response.WriteErrorResponse(w, http.StatusInternalServerError, createErr)
+		return
+	}
+	response.WriteSuccessResponse(w, http.StatusOK, tmpl)
 }
 
 // Template Update
@@ -53,6 +154,38 @@ func NewTemplateUpdateEndpoint(h TemplateUpdateHandler) *TemplateUpdateEndpoint 
 	return &TemplateUpdateEndpoint{h: h}
 }
 
+// ServeHTTP updates an existing template definition entry by code
+//	@Summary		Update a template
+//	@Description	Modifies variables, subjects, or raw body layouts of an existing layout found by its explicit target code route component.
+//	@Tags			admin-templates
+//	@Accept			json
+//	@Produce		json
+//	@Param			code	path		string				true	"Target identifying tracking code token context"
+//	@Param			request	body		dto.Template		true	"Updatable structural model fields"
+//	@Success		200		{object}	dto.Template		"Refreshed schema specifications entry state details"
+//	@Failure		400		{object}	response.Response	"Invalid path payload reference parameters or corrupt body markup values"
+//	@Failure		500		{object}	response.Response	"Database or engine exceptions processing modified models"
+//	@Router			/api/admin/v1/template/{code} [put]
 func (e *TemplateUpdateEndpoint) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	params := response.GetParams([]string{"code"}, r)
+	code, exists := params["code"]
+	if !exists {
+		response.WriteErrorResponse(w, http.StatusBadRequest, fmt.Errorf("code is required"))
+		return
+	}
 
+	var template *dto.Template
+	if decodeErr := sonic.ConfigDefault.NewDecoder(r.Body).Decode(&template); decodeErr != nil {
+		response.WriteErrorResponse(w, http.StatusBadRequest, decodeErr)
+		return
+	}
+	template.Code = code
+
+	tmpl, updateErr := e.h.Handle(template)
+	if updateErr != nil {
+		response.WriteErrorResponse(w, http.StatusInternalServerError, updateErr)
+		return
+	}
+
+	response.WriteSuccessResponse(w, http.StatusOK, tmpl)
 }
