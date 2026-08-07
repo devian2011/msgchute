@@ -71,7 +71,7 @@ func TestMessageTemplateRepository_GetByCode(t *testing.T) {
 			WillReturnError(sql.ErrNoRows)
 
 		res, err := repo.GetByCode(ctx, code)
-		assert.Error(t, err)
+		assert.Nil(t, err)
 		assert.Nil(t, res)
 	})
 

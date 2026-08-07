@@ -2,6 +2,8 @@ package repository
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -87,6 +89,9 @@ func (r *MessageRepository) GetByID(ctx context.Context, ID uuid.UUID) (*dto.Mes
 	var message dto.Message
 	db := r.getDB(ctx)
 	if err := db.Get(&message, query, args...); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
 		return nil, fmt.Errorf("get message %s: %w", ID, err)
 	}
 	return &message, nil

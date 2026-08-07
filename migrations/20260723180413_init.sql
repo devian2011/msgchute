@@ -79,7 +79,7 @@ CREATE TABLE IF NOT EXISTS task_execution_results
     run_at         TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NULL,
     result         BYTEA                             DEFAULT NULL,
     is_critical    BOOLEAN                  NOT NULL DEFAULT FALSE,
-    execution_time INTERVAL                 NOT NULL
+    execution_time INT8                     NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_task_execution_results_task_id ON task_execution_results (task_id);

@@ -66,7 +66,7 @@ func (r *TaskRepository) GetByID(ctx context.Context, ID uuid.UUID) (*dto.Task, 
 	err = db.Get(&task, query, args...)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, ErrTaskNotFound
+			return nil, nil
 		}
 		return nil, fmt.Errorf("get task by id: %w", err)
 	}

@@ -240,7 +240,7 @@ func TestGetByID_NotFound(t *testing.T) {
 
 	msg, err := repo.GetByID(ctx, id)
 	assert.Nil(t, msg)
-	assert.ErrorIs(t, err, sql.ErrNoRows)
+	assert.Nil(t, err)
 
 	assert.NoError(t, mock.ExpectationsWereMet())
 }

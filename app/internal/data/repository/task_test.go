@@ -79,9 +79,8 @@ func TestTaskRepository_GetByID(t *testing.T) {
 			WillReturnError(sql.ErrNoRows)
 
 		result, err := repo.GetByID(ctx, task.ID)
-		assert.Error(t, err)
+		assert.Nil(t, err)
 		assert.Nil(t, result)
-		assert.True(t, errors.Is(err, ErrTaskNotFound))
 	})
 
 	assert.NoError(t, mock.ExpectationsWereMet())

@@ -67,7 +67,7 @@ func (r *MessageTemplateRepository) GetByCode(ctx context.Context, code string) 
 	db := r.getDB(ctx)
 	if err := db.Get(&t, query, args...); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, err
+			return nil, nil
 		}
 		return nil, fmt.Errorf("get template by code: %w", err)
 	}
