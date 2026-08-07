@@ -42,6 +42,7 @@ func NewTemplateFinderEndpoint(h TemplateFinderHandler) *TemplateFinderEndpoint 
 }
 
 // ServeHTTP lists and filters message templates
+//
 //	@Summary		List and filter templates
 //	@Description	Retrieves a paginated collection of message templates filtered by system code arrays or full-text query matches.
 //	@Tags			admin-templates
@@ -98,7 +99,7 @@ func (e *TemplateFinderEndpoint) ServeHTTP(w http.ResponseWriter, r *http.Reques
 			CurrentPage: page,
 			PerPage:     perPage,
 			Total:       totalCnt,
-			TotalPages:  uint64(pagination.GetPageCount(int(totalCnt), int(perPage))),
+			TotalPages:  uint64(pagination.GetPageCount(int(perPage), int(totalCnt))),
 		},
 	})
 }
@@ -117,6 +118,7 @@ func NewTemplateCreationEndpoint(h TemplateCreationHandler) *TemplateCreationEnd
 }
 
 // ServeHTTP registers a new message template definitions model
+//
 //	@Summary		Create a template
 //	@Description	Creates and stores a completely new message configuration blueprint in the repository.
 //	@Tags			admin-templates
@@ -155,6 +157,7 @@ func NewTemplateUpdateEndpoint(h TemplateUpdateHandler) *TemplateUpdateEndpoint 
 }
 
 // ServeHTTP updates an existing template definition entry by code
+//
 //	@Summary		Update a template
 //	@Description	Modifies variables, subjects, or raw body layouts of an existing layout found by its explicit target code route component.
 //	@Tags			admin-templates

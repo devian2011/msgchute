@@ -43,6 +43,7 @@ func NewMessageFinderEndpoint(h MessageFinderHandler) *MessageFinderEndpoint {
 }
 
 // ServeHTTP finds and lists messages using query filter, sorting, and pagination parameters
+//
 //	@Summary		List and filter messages
 //	@Description	Retrieves a paginated list of messages filtered by status, IDs, recipients, senders, codes, or transports.
 //	@Tags			admin-messages
@@ -102,7 +103,7 @@ func (e *MessageFinderEndpoint) ServeHTTP(w http.ResponseWriter, r *http.Request
 			CurrentPage: page,
 			PerPage:     perPage,
 			Total:       uint64(totalCnt),
-			TotalPages:  uint64(pagination.GetPageCount(totalCnt, int(perPage))),
+			TotalPages:  uint64(pagination.GetPageCount(int(perPage), totalCnt)),
 		},
 	})
 }
@@ -120,6 +121,7 @@ func NewMessageFinderByIDEndpoint(h MessageFinderByIDHandler) *MessageFinderByID
 }
 
 // ServeHTTP finds a single message by its unique ID path parameter
+//
 //	@Summary		Get message by ID
 //	@Description	Retrieves full message details for a specific record via its UUID.
 //	@Tags			admin-messages
