@@ -89,8 +89,10 @@ func Bootstrap(ctx context.Context, cfgFilePath string) (*registry.AppRegistry, 
 		},
 		Handlers: &registry.Handlers{
 			Public: &registry.PublicHandlers{
-				Sender:  public.NewSenderHandler(msgQueue),
-				Preview: public.NewPreviewHandler(tmplMgr),
+				Sender:      public.NewSenderHandler(msgQueue),
+				BatchSender: public.NewBatchSenderHandler(msgQueue),
+				Preview:     public.NewPreviewHandler(tmplMgr),
+				Retrier:     public.NewMessageRetryHandler(msgQueue),
 			},
 			Admin: &registry.AdminHandlers{
 				TemplateCreator: admin.NewTemplateCreateHandler(tmplMgr),

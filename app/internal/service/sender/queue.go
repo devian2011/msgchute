@@ -2,10 +2,12 @@ package sender
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"time"
 
 	"github.com/devian2011/retrier"
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 
 	"github.com/devian2011/msgchute/internal/dto"
@@ -86,4 +88,91 @@ func (s *Queue) Add(message *dto.Message) (*dto.Message, *dto.Task, error) {
 	}
 
 	return message, task, nil
+}
+
+// Retry send repeat action for message
+func (s *Queue) Retry(mrr *dto.MessageRetryRequest) (*dto.Message, *dto.Task, error) {
+	var msg *dto.Message
+	var task *dto.Task
+	err := storage.InTransaction(context.Background(), s.db, func(ctx context.Context) error {
+		now := time.Now()
+		var getErr error
+		msg, getErr = s.messageRepo.GetByID(ctx, mrr.ID)
+		if getErr != nil {
+			return getErr
+		}
+
+		taskMap, selectErr := s.taskRepo.List(ctx, dto.TaskFilter{
+			MessageIDs: []uuid.UUID{msg.ID},
+		})
+		if selectErr != nil {
+			return selectErr
+		}
+		// Check that all tasks is finished
+		isFinished := true
+		if len(taskMap[msg.ID]) > 0 {
+			for _, t := range taskMap[msg.ID] {
+				if !t.IsFinished() {
+					isFinished = false
+					break
+				}
+			}
+		}
+
+		if !isFinished {
+			return errors.New("all task not finished, make retry after all tasks will be closed")
+		}
+
+		// If set new retry policy
+		msgRetry := msg.Retry
+		if mrr.Retry != nil {
+			msgRetry = mrr.Retry
+		}
+		// If msg.Retry is nil, set default
+		if msgRetry == nil {
+			msgRetry = &dto.Retry{
+				Retries:  1,
+				Strategy: retrier.JitterLinearBackOff,
+				Params: map[retrier.BackOffParam]interface{}{
+					retrier.DurationKey: time.Second,
+				},
+			}
+		}
+
+		// If set new schedule
+		nextRun := now
+		if !mrr.Schedule.IsZero() {
+			nextRun = mrr.Schedule
+		}
+
+		task = &dto.Task{
+			ID:            generate.ID(),
+			MessageID:     msg.ID,
+			Worker:        msg.Transport,
+			Status:        retrier.StatusPending,
+			Retries:       0,
+			MaxRetries:    msgRetry.Retries,
+			BackOffCode:   msgRetry.Strategy,
+			BackOffParams: msgRetry.Params,
+			Deadline:      mrr.Deadline,
+			IsProcessed:   false,
+
+			CreatedAt: now,
+			LastRun:   time.Time{},
+			NextRun:   nextRun,
+		}
+
+		_, taskCreateErr := s.taskRepo.Create(ctx, task)
+		if taskCreateErr != nil {
+			slog.Error("Failed to create task", "error", taskCreateErr)
+			return taskCreateErr
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, nil, err
+	}
+	return msg, task, nil
 }

@@ -39,8 +39,10 @@ type Handlers struct {
 }
 
 type PublicHandlers struct {
-	Sender  *public.SenderHandler
-	Preview *public.PreviewHandler
+	Sender      *public.SenderHandler
+	BatchSender *public.BatchSenderHandler
+	Retrier     *public.RetryHandler
+	Preview     *public.PreviewHandler
 }
 
 type AdminHandlers struct {

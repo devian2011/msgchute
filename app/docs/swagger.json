@@ -352,6 +352,104 @@
                 }
             }
         },
+        "/api/v1/batch/send": {
+            "post": {
+                "description": "Accepts an array of message payloads, processes their delivery, and registers tracking tasks for each.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "messages"
+                ],
+                "summary": "Send multiple messages",
+                "parameters": [
+                    {
+                        "description": "List of messages to be processed and sent",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/internal_io_web_endpoint_public.SenderMessageRequest"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Messages processed and delivery tasks created successfully",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/github_com_devian2011_msgchute_internal_dto.AddBatchMessageResponse"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid JSON payload or structural error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_devian2011_msgchute_pkg_http_response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error during processing or delivery dispatch",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_devian2011_msgchute_pkg_http_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/message/retry": {
+            "post": {
+                "description": "Creates a new task to retry a previously failed or pending message. It allows overriding retry policy and schedule.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "messages"
+                ],
+                "summary": "Retry a message",
+                "parameters": [
+                    {
+                        "description": "Retry request parameters",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_devian2011_msgchute_internal_dto.MessageRetryRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Message and task details",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_devian2011_msgchute_internal_dto.AddMessageResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request payload",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_devian2011_msgchute_pkg_http_response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_devian2011_msgchute_pkg_http_response.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/preview": {
             "post": {
                 "description": "Accepts a raw message template along with dynamic parameters, renders them, and returns the final subject and body preview.",
@@ -418,7 +516,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_devian2011_msgchute_internal_dto.Message"
+                            "$ref": "#/definitions/internal_io_web_endpoint_public.SenderMessageRequest"
                         }
                     }
                 ],
@@ -426,7 +524,7 @@
                     "200": {
                         "description": "Message processed and delivery task created successfully",
                         "schema": {
-                            "$ref": "#/definitions/internal_io_web_endpoint_public.SenderResponse"
+                            "$ref": "#/definitions/github_com_devian2011_msgchute_internal_dto.AddMessageResponse"
                         }
                     },
                     "400": {
@@ -446,6 +544,29 @@
         }
     },
     "definitions": {
+        "github_com_devian2011_msgchute_internal_dto.AddBatchMessageResponse": {
+            "type": "object",
+            "properties": {
+                "error": {},
+                "message": {
+                    "$ref": "#/definitions/github_com_devian2011_msgchute_internal_dto.Message"
+                },
+                "task": {
+                    "$ref": "#/definitions/github_com_devian2011_msgchute_internal_dto.Task"
+                }
+            }
+        },
+        "github_com_devian2011_msgchute_internal_dto.AddMessageResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "$ref": "#/definitions/github_com_devian2011_msgchute_internal_dto.Message"
+                },
+                "task": {
+                    "$ref": "#/definitions/github_com_devian2011_msgchute_internal_dto.Task"
+                }
+            }
+        },
         "github_com_devian2011_msgchute_internal_dto.BackOffParams": {
             "type": "object",
             "additionalProperties": true
@@ -480,6 +601,11 @@
         },
         "github_com_devian2011_msgchute_internal_dto.Message": {
             "type": "object",
+            "required": [
+                "recipients",
+                "sender_id",
+                "transport"
+            ],
             "properties": {
                 "body": {
                     "type": "string"
@@ -560,6 +686,23 @@
                     "type": "string"
                 },
                 "subject": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_devian2011_msgchute_internal_dto.MessageRetryRequest": {
+            "type": "object",
+            "properties": {
+                "deadline": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "retry": {
+                    "$ref": "#/definitions/github_com_devian2011_msgchute_internal_dto.Retry"
+                },
+                "schedule": {
                     "type": "string"
                 }
             }
@@ -669,6 +812,12 @@
         },
         "github_com_devian2011_msgchute_internal_dto.Template": {
             "type": "object",
+            "required": [
+                "body",
+                "code",
+                "name",
+                "subject"
+            ],
             "properties": {
                 "body": {
                     "type": "string"
@@ -778,14 +927,50 @@
                 }
             }
         },
-        "internal_io_web_endpoint_public.SenderResponse": {
+        "internal_io_web_endpoint_public.SenderMessageRequest": {
             "type": "object",
+            "required": [
+                "recipients",
+                "sender_id",
+                "transport"
+            ],
             "properties": {
-                "message": {
-                    "$ref": "#/definitions/github_com_devian2011_msgchute_internal_dto.Message"
+                "body": {
+                    "type": "string"
                 },
-                "task": {
-                    "$ref": "#/definitions/github_com_devian2011_msgchute_internal_dto.Task"
+                "code": {
+                    "type": "string"
+                },
+                "deadline": {
+                    "type": "string"
+                },
+                "meta": {
+                    "$ref": "#/definitions/github_com_devian2011_msgchute_internal_dto.MessageMeta"
+                },
+                "params": {
+                    "$ref": "#/definitions/github_com_devian2011_msgchute_internal_dto.MessageParams"
+                },
+                "recipients": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "retry": {
+                    "$ref": "#/definitions/github_com_devian2011_msgchute_internal_dto.Retry"
+                },
+                "schedule": {
+                    "type": "string"
+                },
+                "sender_id": {
+                    "type": "string"
+                },
+                "subject": {
+                    "type": "string"
+                },
+                "transport": {
+                    "description": "Transport message provider",
+                    "type": "string"
                 }
             }
         },
@@ -827,7 +1012,8 @@
         }
     },
     "securityDefinitions": {
-        "Authorization: Bearer \u003ctoken\u003e": {
+        "ApiKeyAuth": {
+            "description": "Bearer token authentication",
             "type": "apiKey",
             "name": "Authorization",
             "in": "header"

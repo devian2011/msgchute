@@ -142,7 +142,7 @@ func TestTaskResultRepository_List(t *testing.T) {
 			Limit:  20,
 			Offset: 0,
 		}
-		// Ожидаем COUNT(*) без WHERE
+
 		mock.ExpectQuery("SELECT COUNT(*) FROM task_execution_results").
 			WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(1))
 
@@ -304,7 +304,6 @@ func TestTaskResultRepository_WithTx(t *testing.T) {
 	tx, err := db.BeginTxx(ctx, nil)
 	require.NoError(t, err)
 
-	// Помещаем транзакцию в контекст
 	ctxWithTx := storage.WithTx(ctx, tx)
 
 	result := newTestTaskExecutionResult()

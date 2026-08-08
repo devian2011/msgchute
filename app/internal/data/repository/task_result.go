@@ -63,7 +63,10 @@ func (r *TaskResultRepository) GetByID(ctx context.Context, ID uuid.UUID) (*dto.
 
 // List returns records matching the filter, along with the total count (ignoring pagination).
 // Sorting and pagination are applied to the main query, while the total count is unaffected.
-func (r *TaskResultRepository) List(ctx context.Context, filter dto.TaskExecutionResultFilter) ([]dto.TaskExecutionResult, int, error) {
+func (r *TaskResultRepository) List(
+	ctx context.Context,
+	filter dto.TaskExecutionResultFilter,
+) ([]*dto.TaskExecutionResult, int, error) {
 	base := r.builder.
 		Select("id", "task_id", "status", "run_at", "result", "is_critical", "execution_time").
 		From(taskResultsTable)
@@ -116,7 +119,7 @@ func (r *TaskResultRepository) List(ctx context.Context, filter dto.TaskExecutio
 		return nil, 0, fmt.Errorf("build list query: %w", err)
 	}
 
-	var results []dto.TaskExecutionResult
+	var results []*dto.TaskExecutionResult
 	err = db.Select(&results, query, args...)
 	if err != nil {
 		return nil, 0, fmt.Errorf("execute list: %w", err)
@@ -127,7 +130,10 @@ func (r *TaskResultRepository) List(ctx context.Context, filter dto.TaskExecutio
 
 // GetByTaskIDs retrieves results for multiple task IDs, grouped by task_id.
 // Returns a map where keys are task IDs and values are slices of results.
-func (r *TaskResultRepository) GetByTaskIDs(ctx context.Context, taskIDs []uuid.UUID) (map[uuid.UUID][]dto.TaskExecutionResult, error) {
+func (r *TaskResultRepository) GetByTaskIDs(
+	ctx context.Context,
+	taskIDs []uuid.UUID,
+) (map[uuid.UUID][]dto.TaskExecutionResult, error) {
 	if len(taskIDs) == 0 {
 		return map[uuid.UUID][]dto.TaskExecutionResult{}, nil
 	}
@@ -145,6 +151,9 @@ func (r *TaskResultRepository) GetByTaskIDs(ctx context.Context, taskIDs []uuid.
 	db := r.getDB(ctx)
 	err = db.Select(&taskResults, query, args...)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return map[uuid.UUID][]dto.TaskExecutionResult{}, nil
+		}
 		return nil, fmt.Errorf("execute list: %w", err)
 	}
 

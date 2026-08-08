@@ -125,7 +125,10 @@ func (r *MessageTemplateRepository) Delete(ctx context.Context, code string) err
 	return nil
 }
 
-func (r *MessageTemplateRepository) Find(ctx context.Context, filter *dto.MessageTemplateFilter) (map[string]*dto.Template, uint64, error) {
+func (r *MessageTemplateRepository) Find(
+	ctx context.Context,
+	filter *dto.MessageTemplateFilter,
+) (map[string]*dto.Template, uint64, error) {
 	selectBuilder := r.builder.Select("code", "name", "description", "params", "subject", "body").
 		From(messageTemplatesTable)
 	countBuilder := r.builder.Select("COUNT(*)").

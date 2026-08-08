@@ -1,5 +1,20 @@
 basePath: /
 definitions:
+  github_com_devian2011_msgchute_internal_dto.AddBatchMessageResponse:
+    properties:
+      error: {}
+      message:
+        $ref: '#/definitions/github_com_devian2011_msgchute_internal_dto.Message'
+      task:
+        $ref: '#/definitions/github_com_devian2011_msgchute_internal_dto.Task'
+    type: object
+  github_com_devian2011_msgchute_internal_dto.AddMessageResponse:
+    properties:
+      message:
+        $ref: '#/definitions/github_com_devian2011_msgchute_internal_dto.Message'
+      task:
+        $ref: '#/definitions/github_com_devian2011_msgchute_internal_dto.Task'
+    type: object
   github_com_devian2011_msgchute_internal_dto.BackOffParams:
     additionalProperties: true
     type: object
@@ -57,6 +72,10 @@ definitions:
       transport:
         description: Transport message provider
         type: string
+    required:
+    - recipients
+    - sender_id
+    - transport
     type: object
   github_com_devian2011_msgchute_internal_dto.MessageMeta:
     additionalProperties: {}
@@ -74,6 +93,17 @@ definitions:
       body:
         type: string
       subject:
+        type: string
+    type: object
+  github_com_devian2011_msgchute_internal_dto.MessageRetryRequest:
+    properties:
+      deadline:
+        type: string
+      id:
+        type: string
+      retry:
+        $ref: '#/definitions/github_com_devian2011_msgchute_internal_dto.Retry'
+      schedule:
         type: string
     type: object
   github_com_devian2011_msgchute_internal_dto.MessageStatus:
@@ -160,6 +190,11 @@ definitions:
         $ref: '#/definitions/github_com_devian2011_msgchute_internal_dto.TemplateParams'
       subject:
         type: string
+    required:
+    - body
+    - code
+    - name
+    - subject
     type: object
   github_com_devian2011_msgchute_internal_dto.TemplateParam:
     properties:
@@ -218,12 +253,37 @@ definitions:
       subject:
         type: string
     type: object
-  internal_io_web_endpoint_public.SenderResponse:
+  internal_io_web_endpoint_public.SenderMessageRequest:
     properties:
-      message:
-        $ref: '#/definitions/github_com_devian2011_msgchute_internal_dto.Message'
-      task:
-        $ref: '#/definitions/github_com_devian2011_msgchute_internal_dto.Task'
+      body:
+        type: string
+      code:
+        type: string
+      deadline:
+        type: string
+      meta:
+        $ref: '#/definitions/github_com_devian2011_msgchute_internal_dto.MessageMeta'
+      params:
+        $ref: '#/definitions/github_com_devian2011_msgchute_internal_dto.MessageParams'
+      recipients:
+        items:
+          type: string
+        type: array
+      retry:
+        $ref: '#/definitions/github_com_devian2011_msgchute_internal_dto.Retry'
+      schedule:
+        type: string
+      sender_id:
+        type: string
+      subject:
+        type: string
+      transport:
+        description: Transport message provider
+        type: string
+    required:
+    - recipients
+    - sender_id
+    - transport
     type: object
   retrier.TaskStatus:
     enum:
@@ -497,6 +557,72 @@ paths:
       summary: Update a template
       tags:
       - admin-templates
+  /api/v1/batch/send:
+    post:
+      consumes:
+      - application/json
+      description: Accepts an array of message payloads, processes their delivery,
+        and registers tracking tasks for each.
+      parameters:
+      - description: List of messages to be processed and sent
+        in: body
+        name: request
+        required: true
+        schema:
+          items:
+            $ref: '#/definitions/internal_io_web_endpoint_public.SenderMessageRequest'
+          type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Messages processed and delivery tasks created successfully
+          schema:
+            items:
+              $ref: '#/definitions/github_com_devian2011_msgchute_internal_dto.AddBatchMessageResponse'
+            type: array
+        "400":
+          description: Invalid JSON payload or structural error
+          schema:
+            $ref: '#/definitions/github_com_devian2011_msgchute_pkg_http_response.Response'
+        "500":
+          description: Internal server error during processing or delivery dispatch
+          schema:
+            $ref: '#/definitions/github_com_devian2011_msgchute_pkg_http_response.Response'
+      summary: Send multiple messages
+      tags:
+      - messages
+  /api/v1/message/retry:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new task to retry a previously failed or pending message.
+        It allows overriding retry policy and schedule.
+      parameters:
+      - description: Retry request parameters
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_devian2011_msgchute_internal_dto.MessageRetryRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Message and task details
+          schema:
+            $ref: '#/definitions/github_com_devian2011_msgchute_internal_dto.AddMessageResponse'
+        "400":
+          description: Invalid request payload
+          schema:
+            $ref: '#/definitions/github_com_devian2011_msgchute_pkg_http_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_devian2011_msgchute_pkg_http_response.Response'
+      summary: Retry a message
+      tags:
+      - messages
   /api/v1/preview:
     post:
       consumes:
@@ -540,14 +666,14 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_devian2011_msgchute_internal_dto.Message'
+          $ref: '#/definitions/internal_io_web_endpoint_public.SenderMessageRequest'
       produces:
       - application/json
       responses:
         "200":
           description: Message processed and delivery task created successfully
           schema:
-            $ref: '#/definitions/internal_io_web_endpoint_public.SenderResponse'
+            $ref: '#/definitions/github_com_devian2011_msgchute_internal_dto.AddMessageResponse'
         "400":
           description: Invalid JSON payload or structural error
           schema:
@@ -560,7 +686,8 @@ paths:
       tags:
       - messages
 securityDefinitions:
-  'Authorization: Bearer <token>':
+  ApiKeyAuth:
+    description: Bearer token authentication
     in: header
     name: Authorization
     type: apiKey

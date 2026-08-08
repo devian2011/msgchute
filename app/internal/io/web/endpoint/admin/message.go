@@ -26,16 +26,16 @@ type MessageFinderResponse struct {
 	Pagination pagination.PageData   `json:"pagination"`
 }
 
-type MessageFinderHandler interface {
+type messageFinderHandler interface {
 	Handle(filter *dto.MessageFilter) ([]dto.FullMessageInfo, int, error)
 }
 
 type MessageFinderEndpoint struct {
-	h       MessageFinderHandler
+	h       messageFinderHandler
 	decoder *form.Decoder
 }
 
-func NewMessageFinderEndpoint(h MessageFinderHandler) *MessageFinderEndpoint {
+func NewMessageFinderEndpoint(h messageFinderHandler) *MessageFinderEndpoint {
 	return &MessageFinderEndpoint{
 		h:       h,
 		decoder: form.NewDecoder(),
@@ -108,15 +108,15 @@ func (e *MessageFinderEndpoint) ServeHTTP(w http.ResponseWriter, r *http.Request
 	})
 }
 
-type MessageFinderByIDHandler interface {
+type messageFinderByIDHandler interface {
 	Handle(ID uuid.UUID) (*dto.FullMessageInfo, error)
 }
 
 type MessageFinderByIDEndpoint struct {
-	h MessageFinderByIDHandler
+	h messageFinderByIDHandler
 }
 
-func NewMessageFinderByIDEndpoint(h MessageFinderByIDHandler) *MessageFinderByIDEndpoint {
+func NewMessageFinderByIDEndpoint(h messageFinderByIDHandler) *MessageFinderByIDEndpoint {
 	return &MessageFinderByIDEndpoint{h: h}
 }
 

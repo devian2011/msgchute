@@ -54,6 +54,12 @@ type Task struct {
 	NextRun   time.Time `db:"next_run" json:"next_run"`
 }
 
+func (t *Task) IsFinished() bool {
+	return t.Status == retrier.StatusSuccess ||
+		t.Status == retrier.StatusFailure ||
+		t.MaxRetries <= t.Retries
+}
+
 type BackOffParams map[retrier.BackOffParam]interface{}
 
 func (b BackOffParams) Value() (driver.Value, error) {

@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/Masterminds/squirrel"
 	"github.com/google/uuid"
@@ -75,7 +74,7 @@ func (r *TaskRepository) GetByID(ctx context.Context, ID uuid.UUID) (*dto.Task, 
 
 // GetByMessageID returns all tasks associated with the given message ID.
 // Results are ordered by created_at in ascending order.
-func (r *TaskRepository) GetByMessageID(ctx context.Context, messageID uuid.UUID) ([]dto.Task, error) {
+func (r *TaskRepository) GetByMessageID(ctx context.Context, messageID uuid.UUID) ([]*dto.Task, error) {
 	query, args, err := r.builder.
 		Select(taskColumns...).
 		From(taskTable).
@@ -87,7 +86,7 @@ func (r *TaskRepository) GetByMessageID(ctx context.Context, messageID uuid.UUID
 		return nil, fmt.Errorf("build query: %w", err)
 	}
 
-	var tasks []dto.Task
+	var tasks []*dto.Task
 	db := r.getDB(ctx)
 	err = db.Select(&tasks, query, args...)
 	if err != nil {
@@ -281,14 +280,18 @@ func (r *TaskRepository) List(ctx context.Context, filter dto.TaskFilter) (map[u
 		return nil, fmt.Errorf("build list query: %w", err)
 	}
 
+	result := make(map[uuid.UUID][]dto.Task)
+
 	var tasks []dto.Task
 	db := r.getDB(ctx)
 	err = db.Select(&tasks, query, args...)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return result, nil
+		}
 		return nil, fmt.Errorf("list tasks: %w", err)
 	}
 
-	result := make(map[uuid.UUID][]dto.Task)
 	for _, task := range tasks {
 		result[task.MessageID] = append(result[task.MessageID], task)
 	}
@@ -303,12 +306,4 @@ func isAllowedColumn(col string) bool {
 		}
 	}
 	return false
-}
-
-// toNullTime returns nil if the time is zero, otherwise returns the time itself.
-func toNullTime(t time.Time) interface{} {
-	if t.IsZero() {
-		return nil
-	}
-	return t
 }

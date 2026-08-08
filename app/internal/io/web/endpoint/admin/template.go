@@ -13,7 +13,7 @@ import (
 	"github.com/devian2011/msgchute/pkg/http/sort"
 )
 
-// TemplateFinderHandler Template finder
+// templateFinderHandler Template finder
 
 type TemplateFinderResult struct {
 	Templates  map[string]*dto.Template `json:"templates"`
@@ -25,16 +25,16 @@ type TemplateFilterRequest struct {
 	Search *string  `form:"search"`
 }
 
-type TemplateFinderHandler interface {
+type templateFinderHandler interface {
 	Handle(filter *dto.MessageTemplateFilter) (map[string]*dto.Template, uint64, error)
 }
 
 type TemplateFinderEndpoint struct {
-	h       TemplateFinderHandler
+	h       templateFinderHandler
 	decoder *form.Decoder
 }
 
-func NewTemplateFinderEndpoint(h TemplateFinderHandler) *TemplateFinderEndpoint {
+func NewTemplateFinderEndpoint(h templateFinderHandler) *TemplateFinderEndpoint {
 	return &TemplateFinderEndpoint{
 		h:       h,
 		decoder: form.NewDecoder(),
@@ -106,14 +106,14 @@ func (e *TemplateFinderEndpoint) ServeHTTP(w http.ResponseWriter, r *http.Reques
 
 // Template creation
 
-type TemplateCreationHandler interface {
+type templateCreationHandler interface {
 	Handle(template *dto.Template) (*dto.Template, error)
 }
 type TemplateCreationEndpoint struct {
-	h TemplateCreationHandler
+	h templateCreationHandler
 }
 
-func NewTemplateCreationEndpoint(h TemplateCreationHandler) *TemplateCreationEndpoint {
+func NewTemplateCreationEndpoint(h templateCreationHandler) *TemplateCreationEndpoint {
 	return &TemplateCreationEndpoint{h: h}
 }
 
@@ -145,14 +145,14 @@ func (e *TemplateCreationEndpoint) ServeHTTP(w http.ResponseWriter, r *http.Requ
 
 // Template Update
 
-type TemplateUpdateHandler interface {
+type templateUpdateHandler interface {
 	Handle(template *dto.Template) (*dto.Template, error)
 }
 type TemplateUpdateEndpoint struct {
-	h TemplateUpdateHandler
+	h templateUpdateHandler
 }
 
-func NewTemplateUpdateEndpoint(h TemplateUpdateHandler) *TemplateUpdateEndpoint {
+func NewTemplateUpdateEndpoint(h templateUpdateHandler) *TemplateUpdateEndpoint {
 	return &TemplateUpdateEndpoint{h: h}
 }
 

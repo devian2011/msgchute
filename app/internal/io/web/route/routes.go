@@ -63,8 +63,14 @@ func publicAPI(r *mux.Router, handlers *registry.Handlers) *mux.Router {
 		writer.Write([]byte("pong"))
 	})
 
-	r.Handle("/api/v1/send", public.NewSenderEndpoint(handlers.Public.Sender))
-	r.Handle("/api/v1/preview", public.NewMessagePreviewEndpoint(handlers.Public.Preview))
+	r.Handle("/api/v1/send", public.NewSenderEndpoint(handlers.Public.Sender)).
+		Methods(http.MethodPost)
+	r.Handle("/api/v1/batch/send", public.NewBatchSenderEndpoint(handlers.Public.BatchSender)).
+		Methods(http.MethodPost)
+	r.Handle("/api/v1/preview", public.NewMessagePreviewEndpoint(handlers.Public.Preview)).
+		Methods(http.MethodPost)
+	r.Handle("/api/v1/message/retry", public.NewMessageRetryEndpoint(handlers.Public.Retrier)).
+		Methods(http.MethodPost)
 
 	return r
 }

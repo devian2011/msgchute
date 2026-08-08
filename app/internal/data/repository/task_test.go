@@ -138,7 +138,6 @@ func TestTaskRepository_Create(t *testing.T) {
 	ctx := context.Background()
 	task := newTestTask()
 
-	// Поле is_processed добавлено в список столбцов и значений
 	expectedSQL := "INSERT INTO tasks (id,message_id,worker,status,retries,max_retries,backoff_code,backoff_params,deadline,is_processed,last_run,next_run) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)"
 
 	t.Run("success", func(t *testing.T) {

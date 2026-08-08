@@ -21,6 +21,6 @@ type taskResultRepo interface {
 type messageRepo interface {
 	Find(ctx context.Context, filter *dto.MessageFilter) ([]*dto.Message, uint64, error)
 	GetByID(context.Context, uuid.UUID) (*dto.Message, error)
-	GetByIDs(ctx context.Context, IDs []uuid.UUID) ([]dto.Message, error)
+	GetByIDs(ctx context.Context, IDs []uuid.UUID) ([]*dto.Message, error)
 	UpdateStatus(context.Context, uuid.UUID, dto.MessageStatus) error
 }

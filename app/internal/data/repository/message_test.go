@@ -148,7 +148,7 @@ func TestMessageRepository_CreateWithTransaction(t *testing.T) {
 	tx, err := db.BeginTxx(ctx, nil)
 	require.NoError(t, err)
 
-	// Помещаем транзакцию в контекст
+	// Set tx to ctx
 	ctxWithTx := storage.WithTx(ctx, tx)
 
 	msg := &dto.Message{

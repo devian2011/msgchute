@@ -36,6 +36,14 @@ type MessageFilter struct {
 	SortOrder *string
 }
 
+// MessageRetryRequest
+type MessageRetryRequest struct {
+	ID       uuid.UUID `json:"id"`
+	Deadline time.Time `json:"deadline"`
+	Retry    *Retry    `json:"retry,omitempty"`
+	Schedule time.Time `json:"schedule,omitempty"`
+}
+
 // Message represents the core message entity tracking dispatch metadata and payload definitions.
 type Message struct {
 	ID         uuid.UUID     `json:"id" db:"id"`

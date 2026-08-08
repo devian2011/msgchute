@@ -17,7 +17,7 @@ import (
 	"github.com/devian2011/msgchute/internal/dto"
 )
 
-// newMockDB создает sqlx.DB и sqlmock для тестов
+// newMockDB creates sqlx.DB and sqlmock for tests
 func newMockDB(t *testing.T) (*sqlx.DB, sqlmock.Sqlmock) {
 	db, mock, err := sqlmock.New()
 	require.NoError(t, err)
@@ -25,7 +25,7 @@ func newMockDB(t *testing.T) (*sqlx.DB, sqlmock.Sqlmock) {
 	return sqlxDB, mock
 }
 
-// setupStore создает WorkerStore с моками для тестов
+// setupStore creates WorkerStore with mocks
 func setupStore(
 	ctx context.Context,
 	db *sqlx.DB,
@@ -81,21 +81,21 @@ func TestWorkerStore_GetTasks_Success(t *testing.T) {
 		msgID1: {task1},
 		msgID2: {task2},
 	}
-	taskRepo.On("List", mock.MatchedBy(func(filter dto.TaskFilter) bool {
+
+	taskRepo.On("List", mock.Anything, mock.MatchedBy(func(filter dto.TaskFilter) bool {
 		return len(filter.Statuses) == 1 &&
 			filter.Statuses[0] == retrier.StatusPending &&
 			filter.NextRunBefore != nil
 	})).Return(taskMap, nil)
 
-	msgRepo.On("GetByIDs", mock.MatchedBy(func(ids []uuid.UUID) bool {
+	msgRepo.On("GetByIDs", mock.Anything, mock.MatchedBy(func(ids []uuid.UUID) bool {
 		if len(ids) != 2 {
 			return false
 		}
 		return (ids[0] == msgID1 && ids[1] == msgID2) || (ids[0] == msgID2 && ids[1] == msgID1)
-	})).Return([]dto.Message{msg1, msg2}, nil)
+	})).Return([]*dto.Message{&msg1, &msg2}, nil)
 
-	// Добавляем ожидание для Lock (без контекста, только ID)
-	taskRepo.On("Lock", mock.Anything).Return(nil).Once()
+	taskRepo.On("Lock", mock.Anything, mock.Anything).Return(nil).Once()
 
 	sqlMock.ExpectBegin()
 	sqlMock.ExpectCommit()
@@ -136,7 +136,7 @@ func TestWorkerStore_GetTasks_EmptyList(t *testing.T) {
 	defer db.Close()
 
 	taskRepo := new(MockTaskRepo)
-	taskRepo.On("List", mock.Anything).Return(map[uuid.UUID][]dto.Task{}, nil)
+	taskRepo.On("List", mock.Anything, mock.Anything).Return(map[uuid.UUID][]dto.Task{}, nil)
 
 	store := setupStore(context.Background(), db, taskRepo, new(MockTaskResultRepo), new(MockMessageRepo))
 
@@ -154,7 +154,7 @@ func TestWorkerStore_GetTasks_ListError(t *testing.T) {
 	defer db.Close()
 
 	taskRepo := new(MockTaskRepo)
-	taskRepo.On("List", mock.Anything).Return(nil, assert.AnError)
+	taskRepo.On("List", mock.Anything, mock.Anything).Return(nil, assert.AnError)
 
 	store := setupStore(context.Background(), db, taskRepo, new(MockTaskResultRepo), new(MockMessageRepo))
 
@@ -180,8 +180,8 @@ func TestWorkerStore_GetTasks_GetByIDsError(t *testing.T) {
 	task := dto.Task{ID: uuid.New(), MessageID: msgID, Status: retrier.StatusPending}
 	taskMap := map[uuid.UUID][]dto.Task{msgID: {task}}
 
-	taskRepo.On("List", mock.Anything).Return(taskMap, nil)
-	msgRepo.On("GetByIDs", mock.Anything).Return(nil, assert.AnError)
+	taskRepo.On("List", mock.Anything, mock.Anything).Return(taskMap, nil)
+	msgRepo.On("GetByIDs", mock.Anything, mock.Anything).Return(nil, assert.AnError)
 
 	sqlMock.ExpectBegin()
 	sqlMock.ExpectRollback()
@@ -210,13 +210,13 @@ func TestWorkerStore_SaveTask_Success(t *testing.T) {
 		RunAt:  time.Now(),
 	}
 
-	taskRepo.On("GetByID", taskID).Return(origTask, nil)
-	taskRepo.On("Update", mock.MatchedBy(func(t *dto.Task) bool {
+	taskRepo.On("GetByID", mock.Anything, taskID).Return(origTask, nil)
+	taskRepo.On("Update", mock.Anything, mock.MatchedBy(func(t *dto.Task) bool {
 		return t.ID == taskID &&
 			t.Status == retrier.StatusSuccess &&
 			t.Retries == 1
 	})).Return(updatedTask, nil)
-	resultRepo.On("Create", mock.MatchedBy(func(r *dto.TaskExecutionResult) bool {
+	resultRepo.On("Create", mock.Anything, mock.MatchedBy(func(r *dto.TaskExecutionResult) bool {
 		return r.TaskID == taskID &&
 			r.Status == retrier.StatusSuccess &&
 			r.ID == result.ID
@@ -245,7 +245,7 @@ func TestWorkerStore_SaveTask_GetByIDError(t *testing.T) {
 	store := setupStore(context.Background(), db, taskRepo, new(MockTaskResultRepo), new(MockMessageRepo))
 
 	taskID := uuid.New()
-	taskRepo.On("GetByID", taskID).Return(nil, assert.AnError)
+	taskRepo.On("GetByID", mock.Anything, taskID).Return(nil, assert.AnError)
 
 	sqlMock.ExpectBegin()
 	sqlMock.ExpectRollback()
@@ -264,8 +264,8 @@ func TestWorkerStore_SaveTask_UpdateError(t *testing.T) {
 
 	taskID := uuid.New()
 	origTask := &dto.Task{ID: taskID}
-	taskRepo.On("GetByID", taskID).Return(origTask, nil)
-	taskRepo.On("Update", mock.Anything).Return(nil, assert.AnError)
+	taskRepo.On("GetByID", mock.Anything, taskID).Return(origTask, nil)
+	taskRepo.On("Update", mock.Anything, mock.Anything).Return(nil, assert.AnError)
 
 	sqlMock.ExpectBegin()
 	sqlMock.ExpectRollback()
@@ -286,9 +286,9 @@ func TestWorkerStore_SaveTask_CreateResultError(t *testing.T) {
 	taskID := uuid.New()
 	origTask := &dto.Task{ID: taskID}
 	updatedTask := &dto.Task{ID: taskID}
-	taskRepo.On("GetByID", taskID).Return(origTask, nil)
-	taskRepo.On("Update", mock.Anything).Return(updatedTask, nil)
-	resultRepo.On("Create", mock.Anything).Return(assert.AnError)
+	taskRepo.On("GetByID", mock.Anything, taskID).Return(origTask, nil)
+	taskRepo.On("Update", mock.Anything, mock.Anything).Return(updatedTask, nil)
+	resultRepo.On("Create", mock.Anything, mock.Anything).Return(assert.AnError)
 
 	sqlMock.ExpectBegin()
 	sqlMock.ExpectRollback()

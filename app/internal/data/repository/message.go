@@ -98,9 +98,9 @@ func (r *MessageRepository) GetByID(ctx context.Context, ID uuid.UUID) (*dto.Mes
 }
 
 // GetByIDs retrieves multiple messages by their UUIDs.
-func (r *MessageRepository) GetByIDs(ctx context.Context, IDs []uuid.UUID) ([]dto.Message, error) {
+func (r *MessageRepository) GetByIDs(ctx context.Context, IDs []uuid.UUID) ([]*dto.Message, error) {
 	if len(IDs) == 0 {
-		return []dto.Message{}, nil
+		return []*dto.Message{}, nil
 	}
 
 	selectBuilder := r.builder.Select(messageColumns...).
@@ -112,9 +112,12 @@ func (r *MessageRepository) GetByIDs(ctx context.Context, IDs []uuid.UUID) ([]dt
 		return nil, fmt.Errorf("build get by ids query: %w", err)
 	}
 
-	var messages []dto.Message
+	var messages []*dto.Message
 	db := r.getDB(ctx)
 	if err := db.Select(&messages, query, args...); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return []*dto.Message{}, nil
+		}
 		return nil, fmt.Errorf("get messages by IDs: %w", err)
 	}
 	return messages, nil
@@ -211,6 +214,9 @@ func (r *MessageRepository) GetSenders(ctx context.Context) ([]string, error) {
 	var senders []string
 	db := r.getDB(ctx)
 	if err := db.Select(&senders, query); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return []string{}, nil
+		}
 		return nil, fmt.Errorf("get senders: %w", err)
 	}
 	if senders == nil {
@@ -236,6 +242,9 @@ func (r *MessageRepository) GetTransports(ctx context.Context) ([]string, error)
 		return nil, fmt.Errorf("get transports: %w", err)
 	}
 	if transports == nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return []string{}, nil
+		}
 		return []string{}, nil
 	}
 	return transports, nil

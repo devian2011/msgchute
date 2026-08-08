@@ -8,15 +8,15 @@ import (
 	"github.com/devian2011/msgchute/pkg/http/response"
 )
 
-type WorkerStatusHandler interface {
+type workerStatusHandler interface {
 	Handle() map[string]retrier.FullWorkerState
 }
 
 type WorkerStatusEndpoint struct {
-	h WorkerStatusHandler
+	h workerStatusHandler
 }
 
-func NewWorkerStatusEndpoint(h WorkerStatusHandler) *WorkerStatusEndpoint {
+func NewWorkerStatusEndpoint(h workerStatusHandler) *WorkerStatusEndpoint {
 	return &WorkerStatusEndpoint{h: h}
 }
 

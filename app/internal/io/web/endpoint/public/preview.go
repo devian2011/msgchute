@@ -16,15 +16,15 @@ type PreviewMessageRequest struct {
 	Body    string            `json:"body" db:"body"`
 }
 
-type PreviewHandler interface {
+type previewHandler interface {
 	Handle(msg *dto.Message) (dto.MessagePreview, error)
 }
 
 type MessagePreviewEndpoint struct {
-	h PreviewHandler
+	h previewHandler
 }
 
-func NewMessagePreviewEndpoint(h PreviewHandler) *MessagePreviewEndpoint {
+func NewMessagePreviewEndpoint(h previewHandler) *MessagePreviewEndpoint {
 	return &MessagePreviewEndpoint{h: h}
 }
 
