@@ -348,3 +348,258 @@ func TestGetByIDs_DBError(t *testing.T) {
 
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
+
+func TestMessageRepository_GetSenders(t *testing.T) {
+	db, mock := setupMockDB(t)
+	defer db.Close()
+
+	repo := NewMessageRepository(db)
+	ctx := context.Background()
+
+	t.Run("success", func(t *testing.T) {
+		expectedSQL := "SELECT sender_id FROM messages GROUP BY sender_id"
+		rows := sqlmock.NewRows([]string{"sender_id"}).
+			AddRow("srv_auth").
+			AddRow("billing").
+			AddRow("support")
+
+		mock.ExpectQuery(expectedSQL).WillReturnRows(rows)
+
+		senders, err := repo.GetSenders(ctx)
+		assert.NoError(t, err)
+		assert.Equal(t, []string{"srv_auth", "billing", "support"}, senders)
+		assert.NoError(t, mock.ExpectationsWereMet())
+	})
+
+	t.Run("empty result", func(t *testing.T) {
+		expectedSQL := "SELECT sender_id FROM messages GROUP BY sender_id"
+		rows := sqlmock.NewRows([]string{"sender_id"})
+
+		mock.ExpectQuery(expectedSQL).WillReturnRows(rows)
+
+		senders, err := repo.GetSenders(ctx)
+		assert.NoError(t, err)
+		assert.Empty(t, senders)
+		assert.NoError(t, mock.ExpectationsWereMet())
+	})
+
+	t.Run("db error", func(t *testing.T) {
+		expectedSQL := "SELECT sender_id FROM messages GROUP BY sender_id"
+		mock.ExpectQuery(expectedSQL).WillReturnError(fmt.Errorf("connection lost"))
+
+		senders, err := repo.GetSenders(ctx)
+		assert.Error(t, err)
+		assert.Nil(t, senders)
+		assert.ErrorContains(t, err, "get senders")
+		assert.NoError(t, mock.ExpectationsWereMet())
+	})
+}
+
+func TestMessageRepository_GetTransports(t *testing.T) {
+	db, mock := setupMockDB(t)
+	defer db.Close()
+
+	repo := NewMessageRepository(db)
+	ctx := context.Background()
+
+	t.Run("success", func(t *testing.T) {
+		expectedSQL := "SELECT transport FROM messages GROUP BY transport"
+		rows := sqlmock.NewRows([]string{"transport"}).
+			AddRow("email").
+			AddRow("sms").
+			AddRow("push")
+
+		mock.ExpectQuery(expectedSQL).WillReturnRows(rows)
+
+		transports, err := repo.GetTransports(ctx)
+		assert.NoError(t, err)
+		assert.Equal(t, []string{"email", "sms", "push"}, transports)
+		assert.NoError(t, mock.ExpectationsWereMet())
+	})
+
+	t.Run("empty result", func(t *testing.T) {
+		expectedSQL := "SELECT transport FROM messages GROUP BY transport"
+		rows := sqlmock.NewRows([]string{"transport"})
+
+		mock.ExpectQuery(expectedSQL).WillReturnRows(rows)
+
+		transports, err := repo.GetTransports(ctx)
+		assert.NoError(t, err)
+		assert.Empty(t, transports)
+		assert.NoError(t, mock.ExpectationsWereMet())
+	})
+
+	t.Run("db error", func(t *testing.T) {
+		expectedSQL := "SELECT transport FROM messages GROUP BY transport"
+		mock.ExpectQuery(expectedSQL).WillReturnError(fmt.Errorf("timeout"))
+
+		transports, err := repo.GetTransports(ctx)
+		assert.Error(t, err)
+		assert.Nil(t, transports)
+		assert.ErrorContains(t, err, "get transports")
+		assert.NoError(t, mock.ExpectationsWereMet())
+	})
+}
+
+func TestMessageRepository_GetTemplateCodes(t *testing.T) {
+	db, mock := setupMockDB(t)
+	defer db.Close()
+
+	repo := NewMessageRepository(db)
+	ctx := context.Background()
+
+	t.Run("success", func(t *testing.T) {
+		expectedSQL := "SELECT template_code FROM messages GROUP BY template_code"
+		rows := sqlmock.NewRows([]string{"template_code"}).
+			AddRow("otp_verify").
+			AddRow("invoice_remind").
+			AddRow("welcome")
+
+		mock.ExpectQuery(expectedSQL).WillReturnRows(rows)
+
+		codes, err := repo.GetTemplateCodes(ctx)
+		assert.NoError(t, err)
+		assert.Equal(t, []string{"otp_verify", "invoice_remind", "welcome"}, codes)
+		assert.NoError(t, mock.ExpectationsWereMet())
+	})
+
+	t.Run("empty result", func(t *testing.T) {
+		expectedSQL := "SELECT template_code FROM messages GROUP BY template_code"
+		rows := sqlmock.NewRows([]string{"template_code"})
+
+		mock.ExpectQuery(expectedSQL).WillReturnRows(rows)
+
+		codes, err := repo.GetTemplateCodes(ctx)
+		assert.NoError(t, err)
+		assert.Empty(t, codes)
+		assert.NoError(t, mock.ExpectationsWereMet())
+	})
+
+	t.Run("db error", func(t *testing.T) {
+		expectedSQL := "SELECT template_code FROM messages GROUP BY template_code"
+		mock.ExpectQuery(expectedSQL).WillReturnError(fmt.Errorf("permission denied"))
+
+		codes, err := repo.GetTemplateCodes(ctx)
+		assert.Error(t, err)
+		assert.Nil(t, codes)
+		assert.ErrorContains(t, err, "get transports")
+		assert.NoError(t, mock.ExpectationsWereMet())
+	})
+}
+
+func TestMessageRepository_UpdateStatus(t *testing.T) {
+	db, mock := setupMockDB(t)
+	defer db.Close()
+
+	repo := NewMessageRepository(db)
+	ctx := context.Background()
+
+	t.Run("success", func(t *testing.T) {
+		id := uuid.New()
+		newStatus := dto.MessageStatusSucceeded
+
+		expectedSQL := "UPDATE messages SET status = $1 WHERE id = $2"
+		mock.ExpectExec(expectedSQL).
+			WithArgs(newStatus, id.String()).
+			WillReturnResult(sqlmock.NewResult(0, 1))
+
+		err := repo.UpdateStatus(ctx, id, newStatus)
+		assert.NoError(t, err)
+		assert.NoError(t, mock.ExpectationsWereMet())
+	})
+
+	t.Run("db error", func(t *testing.T) {
+		id := uuid.New()
+		newStatus := dto.MessageStatusFailed
+
+		expectedSQL := "UPDATE messages SET status = $1 WHERE id = $2"
+		mock.ExpectExec(expectedSQL).
+			WithArgs(newStatus, id.String()).
+			WillReturnError(fmt.Errorf("constraint violation"))
+
+		err := repo.UpdateStatus(ctx, id, newStatus)
+		assert.Error(t, err)
+		assert.ErrorContains(t, err, "update status")
+		assert.NoError(t, mock.ExpectationsWereMet())
+	})
+}
+
+func TestMessageRepository_GetRecipients(t *testing.T) {
+	db, mock := setupMockDB(t)
+	defer db.Close()
+
+	repo := NewMessageRepository(db)
+	ctx := context.Background()
+
+	t.Run("success with search substring", func(t *testing.T) {
+		search := "example"
+		expectedSQL := "SELECT DISTINCT jsonb_array_elements_text(recipients) AS recipient FROM messages WHERE jsonb_array_elements_text(recipients) ILIKE $1"
+		rows := sqlmock.NewRows([]string{"recipient"}).
+			AddRow("user@example.com").
+			AddRow("admin@example.org")
+
+		mock.ExpectQuery(expectedSQL).
+			WithArgs("%" + search + "%").
+			WillReturnRows(rows)
+
+		recipients, err := repo.GetRecipients(ctx, search)
+		assert.NoError(t, err)
+		assert.Equal(t, []string{"user@example.com", "admin@example.org"}, recipients)
+		assert.NoError(t, mock.ExpectationsWereMet())
+	})
+
+	t.Run("success with empty search - returns all", func(t *testing.T) {
+		expectedSQL := "SELECT DISTINCT jsonb_array_elements_text(recipients) AS recipient FROM messages"
+		rows := sqlmock.NewRows([]string{"recipient"}).
+			AddRow("alice@mail.com").
+			AddRow("bob@mail.com").
+			AddRow("+79001234567")
+
+		mock.ExpectQuery(expectedSQL).WillReturnRows(rows)
+
+		recipients, err := repo.GetRecipients(ctx, "")
+		assert.NoError(t, err)
+		assert.Equal(t, []string{"alice@mail.com", "bob@mail.com", "+79001234567"}, recipients)
+		assert.NoError(t, mock.ExpectationsWereMet())
+	})
+
+	t.Run("no matching recipients", func(t *testing.T) {
+		search := "nonexistent"
+		expectedSQL := "SELECT DISTINCT jsonb_array_elements_text(recipients) AS recipient FROM messages WHERE jsonb_array_elements_text(recipients) ILIKE $1"
+		mock.ExpectQuery(expectedSQL).
+			WithArgs("%" + search + "%").
+			WillReturnRows(sqlmock.NewRows([]string{"recipient"}))
+
+		recipients, err := repo.GetRecipients(ctx, search)
+		assert.NoError(t, err)
+		assert.Empty(t, recipients)
+		assert.NoError(t, mock.ExpectationsWereMet())
+	})
+
+	t.Run("db error", func(t *testing.T) {
+		search := "test"
+		expectedSQL := "SELECT DISTINCT jsonb_array_elements_text(recipients) AS recipient FROM messages WHERE jsonb_array_elements_text(recipients) ILIKE $1"
+		mock.ExpectQuery(expectedSQL).
+			WithArgs("%" + search + "%").
+			WillReturnError(fmt.Errorf("connection lost"))
+
+		recipients, err := repo.GetRecipients(ctx, search)
+		assert.Error(t, err)
+		assert.Nil(t, recipients)
+		assert.ErrorContains(t, err, "get recipients")
+		assert.NoError(t, mock.ExpectationsWereMet())
+	})
+
+	t.Run("empty rows returns empty slice", func(t *testing.T) {
+		// Проверяем, что при отсутствии записей возвращается пустой срез, а не nil
+		expectedSQL := "SELECT DISTINCT jsonb_array_elements_text(recipients) AS recipient FROM messages"
+		mock.ExpectQuery(expectedSQL).
+			WillReturnRows(sqlmock.NewRows([]string{"recipient"}))
+
+		recipients, err := repo.GetRecipients(ctx, "")
+		assert.NoError(t, err)
+		assert.Empty(t, recipients)
+		assert.NotNil(t, recipients) // должен быть пустой срез, не nil
+		assert.NoError(t, mock.ExpectationsWereMet())
+	})
+}

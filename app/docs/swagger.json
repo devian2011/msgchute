@@ -8,6 +8,75 @@
     },
     "basePath": "/",
     "paths": {
+        "/api/admin/v1/dictionary/message": {
+            "get": {
+                "description": "Returns reference data used for filtering messages: available transports, statuses, template codes, and senders.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "messages"
+                ],
+                "summary": "Get message dictionaries",
+                "responses": {
+                    "200": {
+                        "description": "Successfully returned dictionary data",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_devian2011_msgchute_internal_dto.MessageDictionaries"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_devian2011_msgchute_pkg_http_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/admin/v1/dictionary/message-recipients": {
+            "get": {
+                "description": "Returns a list of unique recipient addresses (emails, phone numbers, etc.) from all messages.\nIf the `search` parameter is provided, the result is filtered by case‑insensitive substring match.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "messages"
+                ],
+                "summary": "Get recipients list",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Search substring to filter recipients (case‑insensitive). If empty, all recipients are returned.",
+                        "name": "search",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of recipient addresses",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_devian2011_msgchute_pkg_http_response.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/api/admin/v1/message": {
             "get": {
                 "description": "Retrieves a paginated list of messages filtered by status, IDs, recipients, senders, codes, or transports.",
@@ -660,6 +729,29 @@
                 "transport": {
                     "description": "Transport message provider",
                     "type": "string"
+                }
+            }
+        },
+        "github_com_devian2011_msgchute_internal_dto.MessageDictionaries": {
+            "type": "object",
+            "properties": {
+                "sender_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "templates": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "transports": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },

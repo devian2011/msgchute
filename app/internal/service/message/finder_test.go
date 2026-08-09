@@ -195,3 +195,179 @@ func TestFinder_FindByID(t *testing.T) {
 		assert.Nil(t, fullMsg)
 	})
 }
+
+func TestFinder_GetSenders(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		mockRepo := new(MockMessageRepo)
+		finder := &Finder{msgRepo: mockRepo}
+
+		expectedSenders := []string{"sender1", "sender2"}
+
+		// Настраиваем мок: ожидаем context.Background() и возвращаем данные без ошибки
+		mockRepo.On("GetSenders", mock.Anything).Return(expectedSenders, nil)
+
+		result, err := finder.GetSenders(context.Background())
+
+		assert.NoError(t, err)
+		assert.Equal(t, expectedSenders, result)
+		mockRepo.AssertExpectations(t)
+	})
+
+	t.Run("error from repository", func(t *testing.T) {
+		mockRepo := new(MockMessageRepo)
+		finder := &Finder{msgRepo: mockRepo}
+
+		expectedErr := errors.New("database connection failed")
+
+		// Настраиваем мок на возврат ошибки
+		mockRepo.On("GetSenders", mock.Anything).Return(nil, expectedErr)
+
+		result, err := finder.GetSenders(context.Background())
+
+		assert.ErrorIs(t, err, expectedErr)
+		assert.Nil(t, result)
+		mockRepo.AssertExpectations(t)
+	})
+}
+
+func TestFinder_GetTransports(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		mockRepo := new(MockMessageRepo)
+		finder := &Finder{msgRepo: mockRepo}
+
+		expectedTransports := []string{"email", "sms", "telegram"}
+
+		mockRepo.On("GetTransports", mock.Anything).Return(expectedTransports, nil)
+
+		result, err := finder.GetTransports(context.Background())
+
+		assert.NoError(t, err)
+		assert.Equal(t, expectedTransports, result)
+		mockRepo.AssertExpectations(t)
+	})
+
+	t.Run("error from repository", func(t *testing.T) {
+		mockRepo := new(MockMessageRepo)
+		finder := &Finder{msgRepo: mockRepo}
+
+		expectedErr := errors.New("repository error")
+
+		mockRepo.On("GetTransports", mock.Anything).Return(nil, expectedErr)
+
+		result, err := finder.GetTransports(context.Background())
+
+		assert.ErrorIs(t, err, expectedErr)
+		assert.Nil(t, result)
+		mockRepo.AssertExpectations(t)
+	})
+}
+
+func TestFinder_GetTemplates(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		mockRepo := new(MockMessageRepo)
+		finder := &Finder{msgRepo: mockRepo}
+
+		ctx := context.WithValue(context.Background(), "test-key", "test-value")
+		expectedTemplates := []string{"welcome_email", "password_reset", "order_confirmation"}
+
+		// Проверяем, что передается именно наш контекст ctx
+		mockRepo.On("GetTemplateCodes", ctx).Return(expectedTemplates, nil)
+
+		result, err := finder.GetTemplates(ctx)
+
+		assert.NoError(t, err)
+		assert.Equal(t, expectedTemplates, result)
+		mockRepo.AssertExpectations(t)
+	})
+
+	t.Run("error from repository", func(t *testing.T) {
+		mockRepo := new(MockMessageRepo)
+		finder := &Finder{msgRepo: mockRepo}
+
+		ctx := context.Background()
+		expectedErr := errors.New("failed to fetch templates")
+
+		mockRepo.On("GetTemplateCodes", ctx).Return(nil, expectedErr)
+
+		result, err := finder.GetTemplates(ctx)
+
+		assert.ErrorIs(t, err, expectedErr)
+		assert.Nil(t, result)
+		mockRepo.AssertExpectations(t)
+	})
+}
+
+func TestFinder_GetRecipients(t *testing.T) {
+	tests := []struct {
+		name      string
+		search    string
+		mockSetup func(mockRepo *MockMessageRepo)
+		want      []string
+		wantErr   bool
+	}{
+		{
+			name:   "success with search substring",
+			search: "example",
+			mockSetup: func(mockRepo *MockMessageRepo) {
+				mockRepo.On("GetRecipients", mock.Anything, "example").
+					Return([]string{"user@example.com", "admin@example.org"}, nil)
+			},
+			want:    []string{"user@example.com", "admin@example.org"},
+			wantErr: false,
+		},
+		{
+			name:   "success with empty search (all recipients)",
+			search: "",
+			mockSetup: func(mockRepo *MockMessageRepo) {
+				mockRepo.On("GetRecipients", mock.Anything, "").
+					Return([]string{"alice@mail.com", "bob@mail.com", "+79001234567"}, nil)
+			},
+			want:    []string{"alice@mail.com", "bob@mail.com", "+79001234567"},
+			wantErr: false,
+		},
+		{
+			name:   "no matching recipients returns empty slice",
+			search: "nonexistent",
+			mockSetup: func(mockRepo *MockMessageRepo) {
+				mockRepo.On("GetRecipients", mock.Anything, "nonexistent").
+					Return([]string{}, nil)
+			},
+			want:    []string{},
+			wantErr: false,
+		},
+		{
+			name:   "repository returns error",
+			search: "test",
+			mockSetup: func(mockRepo *MockMessageRepo) {
+				mockRepo.On("GetRecipients", mock.Anything, "test").
+					Return(nil, assert.AnError) // или конкретная ошибка
+			},
+			want:    nil,
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockRepo := new(MockMessageRepo)
+			tt.mockSetup(mockRepo)
+
+			finder := &Finder{
+				msgRepo: mockRepo, // поле, в котором хранится репозиторий
+			}
+			ctx := context.Background()
+
+			got, err := finder.GetRecipients(ctx, tt.search)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+				assert.Nil(t, got)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.want, got)
+			}
+
+			mockRepo.AssertExpectations(t)
+		})
+	}
+}

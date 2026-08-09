@@ -1,5 +1,11 @@
 package dto
 
+type MessageDictionaries struct {
+	SenderIDs  []string `json:"sender_ids"`
+	Transports []string `json:"transports"`
+	Templates  []string `json:"templates"`
+}
+
 type FullMessageInfo struct {
 	Message Message    `json:"message"`
 	Tasks   []FullTask `json:"tasks"`

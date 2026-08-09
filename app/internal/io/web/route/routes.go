@@ -46,6 +46,16 @@ func managementAPI(r *mux.Router, handlers *registry.Handlers) *mux.Router {
 	r.Handle("/api/admin/v1/message/{id}", admin.NewMessageFinderByIDEndpoint(handlers.Admin.MessageFindByID)).
 		Methods(http.MethodGet)
 
+	r.Handle(
+		"/api/admin/v1/dictionary/message",
+		admin.NewMessageDictionaryEndpoint(handlers.Admin.MessageDictionary),
+	).Methods(http.MethodGet)
+
+	r.Handle(
+		"/api/admin/v1/dictionary/message-recipients",
+		admin.NewMessageRecipientFinderEndpoint(handlers.Admin.MessageRecipientFinder),
+	).Methods(http.MethodGet)
+
 	r.Handle("/api/admin/v1/workers/status", admin.NewWorkerStatusEndpoint(handlers.Admin.WorkerStatus)).
 		Methods(http.MethodGet)
 

@@ -50,8 +50,10 @@ type AdminHandlers struct {
 	TemplateUpdater *admin.TemplateUpdateHandler
 	TemplateFinder  *admin.TemplateFinderHandler
 
-	MessageFinder   *admin.MessageFindHandler
-	MessageFindByID *admin.MessageFindByIDHandler
+	MessageFinder          *admin.MessageFindHandler
+	MessageFindByID        *admin.MessageFindByIDHandler
+	MessageDictionary      *admin.MessageDictionaryHandler
+	MessageRecipientFinder *admin.MessageRecipientFindHandler
 
 	WorkerStatus *admin.WorkerStatusHandler
 }

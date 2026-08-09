@@ -117,3 +117,19 @@ func (f *Finder) FindByID(messageID uuid.UUID) (*dto.FullMessageInfo, error) {
 		Tasks:   fullTasks,
 	}, nil
 }
+
+func (f *Finder) GetSenders(ctx context.Context) ([]string, error) {
+	return f.msgRepo.GetSenders(ctx)
+}
+
+func (f *Finder) GetTransports(ctx context.Context) ([]string, error) {
+	return f.msgRepo.GetTransports(ctx)
+}
+
+func (f *Finder) GetTemplates(ctx context.Context) ([]string, error) {
+	return f.msgRepo.GetTemplateCodes(ctx)
+}
+
+func (f *Finder) GetRecipients(ctx context.Context, search string) ([]string, error) {
+	return f.msgRepo.GetRecipients(ctx, search)
+}

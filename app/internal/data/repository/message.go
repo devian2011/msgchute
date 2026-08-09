@@ -250,6 +250,31 @@ func (r *MessageRepository) GetTransports(ctx context.Context) ([]string, error)
 	return transports, nil
 }
 
+// GetTemplateCodes returns distinct transport names.
+func (r *MessageRepository) GetTemplateCodes(ctx context.Context) ([]string, error) {
+	query, _, err := r.builder.
+		Select("template_code").
+		From(messagesTable).
+		GroupBy("template_code").
+		ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("build get transports query: %w", err)
+	}
+
+	var transports []string
+	db := r.getDB(ctx)
+	if err := db.Select(&transports, query); err != nil {
+		return nil, fmt.Errorf("get transports: %w", err)
+	}
+	if transports == nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return []string{}, nil
+		}
+		return []string{}, nil
+	}
+	return transports, nil
+}
+
 // UpdateStatus updates the status of a message.
 func (r *MessageRepository) UpdateStatus(ctx context.Context, id uuid.UUID, status dto.MessageStatus) error {
 	query, args, err := r.builder.
@@ -267,4 +292,35 @@ func (r *MessageRepository) UpdateStatus(ctx context.Context, id uuid.UUID, stat
 		return fmt.Errorf("update status: %w", err)
 	}
 	return nil
+}
+
+// GetRecipients returns distinct recipient strings matching a search pattern.
+// If search is empty, returns all distinct recipients from all messages.
+// search is matched as a substring (case‑insensitive).
+func (r *MessageRepository) GetRecipients(ctx context.Context, search string) ([]string, error) {
+	queryBuilder := r.builder.
+		Select("DISTINCT jsonb_array_elements_text(recipients) AS recipient").
+		From(messagesTable)
+
+	if search != "" {
+		queryBuilder = queryBuilder.Where("jsonb_array_elements_text(recipients) ILIKE ?", "%"+search+"%")
+	}
+
+	query, args, err := queryBuilder.ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("build get recipients query: %w", err)
+	}
+
+	var recipients []string
+	db := r.getDB(ctx)
+	if err := db.Select(&recipients, query, args...); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return []string{}, nil
+		}
+		return nil, fmt.Errorf("get recipients: %w", err)
+	}
+	if recipients == nil {
+		return []string{}, nil
+	}
+	return recipients, nil
 }

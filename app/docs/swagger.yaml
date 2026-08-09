@@ -77,6 +77,21 @@ definitions:
     - sender_id
     - transport
     type: object
+  github_com_devian2011_msgchute_internal_dto.MessageDictionaries:
+    properties:
+      sender_ids:
+        items:
+          type: string
+        type: array
+      templates:
+        items:
+          type: string
+        type: array
+      transports:
+        items:
+          type: string
+        type: array
+    type: object
   github_com_devian2011_msgchute_internal_dto.MessageMeta:
     additionalProperties: {}
     type: object
@@ -321,6 +336,55 @@ info:
   title: Notification service API
   version: "1.0"
 paths:
+  /api/admin/v1/dictionary/message:
+    get:
+      consumes:
+      - application/json
+      description: 'Returns reference data used for filtering messages: available
+        transports, statuses, template codes, and senders.'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully returned dictionary data
+          schema:
+            $ref: '#/definitions/github_com_devian2011_msgchute_internal_dto.MessageDictionaries'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_devian2011_msgchute_pkg_http_response.Response'
+      summary: Get message dictionaries
+      tags:
+      - messages
+  /api/admin/v1/dictionary/message-recipients:
+    get:
+      consumes:
+      - application/json
+      description: |-
+        Returns a list of unique recipient addresses (emails, phone numbers, etc.) from all messages.
+        If the `search` parameter is provided, the result is filtered by case‑insensitive substring match.
+      parameters:
+      - description: Search substring to filter recipients (case‑insensitive). If
+          empty, all recipients are returned.
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of recipient addresses
+          schema:
+            items:
+              type: string
+            type: array
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_devian2011_msgchute_pkg_http_response.Response'
+      summary: Get recipients list
+      tags:
+      - messages
   /api/admin/v1/message:
     get:
       consumes:

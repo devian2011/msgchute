@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/go-playground/form"
@@ -11,6 +12,66 @@ import (
 	"github.com/devian2011/msgchute/pkg/http/response"
 	"github.com/devian2011/msgchute/pkg/http/sort"
 )
+
+type messageRecipientFindHandler interface {
+	Handle(ctx context.Context, search string) ([]string, error)
+}
+
+type MessageRecipientFinderEndpoint struct {
+	h messageRecipientFindHandler
+}
+
+func NewMessageRecipientFinderEndpoint(h messageRecipientFindHandler) *MessageRecipientFinderEndpoint {
+	return &MessageRecipientFinderEndpoint{h: h}
+}
+
+//	@Summary		Get recipients list
+//	@Description	Returns a list of unique recipient addresses (emails, phone numbers, etc.) from all messages.
+//	@Description	If the `search` parameter is provided, the result is filtered by case‑insensitive substring match.
+//	@Tags			messages
+//	@Accept			json
+//	@Produce		json
+//	@Param			search	query		string				false	"Search substring to filter recipients (case‑insensitive). If empty, all recipients are returned."
+//	@Success		200		{array}		string				"List of recipient addresses"
+//	@Failure		500		{object}	response.Response	"Internal server error"
+//	@Router			/api/admin/v1/dictionary/message-recipients [get]
+func (e *MessageRecipientFinderEndpoint) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	result, err := e.h.Handle(r.Context(), r.URL.Query().Get("search"))
+	if err != nil {
+		response.WriteErrorResponse(w, http.StatusInternalServerError, err)
+		return
+	}
+	response.WriteSuccessResponse(w, http.StatusOK, result)
+}
+
+type messageDictionaryHandler interface {
+	Handle(ctx context.Context) (*dto.MessageDictionaries, error)
+}
+
+type MessageDictionaryEndpoint struct {
+	h messageDictionaryHandler
+}
+
+func NewMessageDictionaryEndpoint(h messageDictionaryHandler) *MessageDictionaryEndpoint {
+	return &MessageDictionaryEndpoint{h: h}
+}
+
+//	@Summary		Get message dictionaries
+//	@Description	Returns reference data used for filtering messages: available transports, statuses, template codes, and senders.
+//	@Tags			messages
+//	@Accept			json
+//	@Produce		json
+//	@Success		200	{object}	dto.MessageDictionaries	"Successfully returned dictionary data"
+//	@Failure		500	{object}	response.Response		"Internal server error"
+//	@Router			/api/admin/v1/dictionary/message [get]
+func (e *MessageDictionaryEndpoint) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	result, err := e.h.Handle(r.Context())
+	if err != nil {
+		response.WriteErrorResponse(w, http.StatusInternalServerError, err)
+		return
+	}
+	response.WriteSuccessResponse(w, http.StatusOK, result)
+}
 
 type MessageFilterRequest struct {
 	Status    []dto.MessageStatus `json:"status" form:"status" query:"status"`
@@ -74,7 +135,7 @@ func (e *MessageFinderEndpoint) ServeHTTP(w http.ResponseWriter, r *http.Request
 		SortField: &respSort.Field,
 		SortOrder: &respSort.Order,
 	}
-	
+
 	var filterRequest MessageFilterRequest
 	if err := e.decoder.Decode(&filterRequest, r.URL.Query()); err != nil {
 		http.Error(w, "Invalid query parameters", http.StatusBadRequest)
