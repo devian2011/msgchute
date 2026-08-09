@@ -300,11 +300,11 @@ func (r *MessageRepository) UpdateStatus(ctx context.Context, id uuid.UUID, stat
 // search is matched as a substring (case‑insensitive).
 func (r *MessageRepository) GetRecipients(ctx context.Context, search string) ([]string, error) {
 	queryBuilder := r.builder.
-		Select("DISTINCT jsonb_array_elements_text(recipients) AS recipient").
-		From(messagesTable)
+		Select("DISTINCT r.recipient").
+		From(messagesTable + ", LATERAL jsonb_array_elements_text(recipients) AS r(recipient)")
 
 	if search != "" {
-		queryBuilder = queryBuilder.Where("jsonb_array_elements_text(recipients) ILIKE ?", "%"+search+"%")
+		queryBuilder = queryBuilder.Where("r.recipient ILIKE ?", "%"+search+"%")
 	}
 
 	query, args, err := queryBuilder.ToSql()
