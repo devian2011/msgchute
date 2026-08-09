@@ -75,12 +75,8 @@ func (e *TemplateFinderEndpoint) ServeHTTP(w http.ResponseWriter, r *http.Reques
 		SortOrder: &respSort.Order,
 	}
 
-	if parseFormErr := r.ParseForm(); parseFormErr != nil {
-		response.WriteErrorResponse(w, http.StatusBadRequest, parseFormErr)
-		return
-	}
 	var filterRequest TemplateFilterRequest
-	if err := e.decoder.Decode(&filterRequest, r.Form); err != nil {
+	if err := e.decoder.Decode(&filterRequest, r.URL.Query()); err != nil {
 		http.Error(w, "Invalid query parameters", http.StatusBadRequest)
 		return
 	}

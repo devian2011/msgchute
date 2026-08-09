@@ -13,12 +13,12 @@ import (
 )
 
 type MessageFilterRequest struct {
-	Status    []dto.MessageStatus `json:"status"`
-	IDs       []uuid.UUID         `json:"ids"`
-	Recipient []string            `json:"recipient"`
-	SenderIDs []string            `json:"sender_ids"`
-	Code      []string            `json:"code"`
-	Transport []string            `json:"transport"`
+	Status    []dto.MessageStatus `json:"status" form:"status" query:"status"`
+	IDs       []uuid.UUID         `json:"ids" form:"ids" query:"ids"`
+	Recipient []string            `json:"recipient" form:"recipient" query:"recipient"`
+	SenderIDs []string            `json:"sender_ids" form:"sender_ids" query:"sender_ids"`
+	Code      []string            `json:"code" form:"code" query:"code"`
+	Transport []string            `json:"transport" form:"transport" query:"transport"`
 }
 
 type MessageFinderResponse struct {
@@ -74,13 +74,9 @@ func (e *MessageFinderEndpoint) ServeHTTP(w http.ResponseWriter, r *http.Request
 		SortField: &respSort.Field,
 		SortOrder: &respSort.Order,
 	}
-
-	if parseFormErr := r.ParseForm(); parseFormErr != nil {
-		response.WriteErrorResponse(w, http.StatusBadRequest, parseFormErr)
-		return
-	}
+	
 	var filterRequest MessageFilterRequest
-	if err := e.decoder.Decode(&filterRequest, r.Form); err != nil {
+	if err := e.decoder.Decode(&filterRequest, r.URL.Query()); err != nil {
 		http.Error(w, "Invalid query parameters", http.StatusBadRequest)
 		return
 	}
