@@ -449,7 +449,7 @@ func TestMessageRepository_GetTemplateCodes(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("success", func(t *testing.T) {
-		expectedSQL := "SELECT template_code FROM messages GROUP BY template_code"
+		expectedSQL := "SELECT template_code FROM messages WHERE template_code IS NOT NULL GROUP BY template_code"
 		rows := sqlmock.NewRows([]string{"template_code"}).
 			AddRow("otp_verify").
 			AddRow("invoice_remind").
@@ -464,7 +464,7 @@ func TestMessageRepository_GetTemplateCodes(t *testing.T) {
 	})
 
 	t.Run("empty result", func(t *testing.T) {
-		expectedSQL := "SELECT template_code FROM messages GROUP BY template_code"
+		expectedSQL := "SELECT template_code FROM messages WHERE template_code IS NOT NULL GROUP BY template_code"
 		rows := sqlmock.NewRows([]string{"template_code"})
 
 		mock.ExpectQuery(expectedSQL).WillReturnRows(rows)
@@ -476,7 +476,7 @@ func TestMessageRepository_GetTemplateCodes(t *testing.T) {
 	})
 
 	t.Run("db error", func(t *testing.T) {
-		expectedSQL := "SELECT template_code FROM messages GROUP BY template_code"
+		expectedSQL := "SELECT template_code FROM messages WHERE template_code IS NOT NULL GROUP BY template_code"
 		mock.ExpectQuery(expectedSQL).WillReturnError(fmt.Errorf("permission denied"))
 
 		codes, err := repo.GetTemplateCodes(ctx)

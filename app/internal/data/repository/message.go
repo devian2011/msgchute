@@ -255,6 +255,7 @@ func (r *MessageRepository) GetTemplateCodes(ctx context.Context) ([]string, err
 	query, _, err := r.builder.
 		Select("template_code").
 		From(messagesTable).
+		Where("template_code IS NOT NULL").
 		GroupBy("template_code").
 		ToSql()
 	if err != nil {
