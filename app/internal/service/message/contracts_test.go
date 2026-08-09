@@ -54,12 +54,12 @@ func (m *MockMessageRepo) GetByID(ctx context.Context, id uuid.UUID) (*dto.Messa
 	return args.Get(0).(*dto.Message), args.Error(1)
 }
 
-func (m *MockMessageRepo) GetByIDs(ctx context.Context, IDs []uuid.UUID) ([]dto.Message, error) {
+func (m *MockMessageRepo) GetByIDs(ctx context.Context, IDs []uuid.UUID) ([]*dto.Message, error) {
 	args := m.Called(ctx, IDs)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).([]dto.Message), args.Error(1)
+	return args.Get(0).([]*dto.Message), args.Error(1)
 }
 
 func (m *MockMessageRepo) UpdateStatus(ctx context.Context, id uuid.UUID, status dto.MessageStatus) error {

@@ -19,6 +19,10 @@ func (m *mockProvider) Allow(ctx context.Context, r *http.Request) (bool, error)
 	return m.allow, m.err
 }
 
+func (m *mockProvider) Configure(payload []byte) error {
+	return nil
+}
+
 func TestHttpMiddleware_Middleware(t *testing.T) {
 	tests := []struct {
 		name           string
