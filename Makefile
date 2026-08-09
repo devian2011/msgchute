@@ -14,6 +14,9 @@ build-smtp:
 build-tg:
 	go build -a -installsuffix cgo -o ./plugins/dist/providers/tg ./plugins/src/providers/telegram/provider.go
 
+build-auth:
+	go build -a -installsuffix cgo -o ./plugins/dist/auth/base ./plugins/src/auth/base/auth.go
+
 # Test project
 test: test-server test-smtp test-tg
 # Test server

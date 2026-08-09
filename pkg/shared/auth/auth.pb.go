@@ -21,6 +21,94 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type ConfigureRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Payload       []byte                 `protobuf:"bytes,1,opt,name=payload,proto3" json:"payload,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ConfigureRequest) Reset() {
+	*x = ConfigureRequest{}
+	mi := &file_auth_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ConfigureRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ConfigureRequest) ProtoMessage() {}
+
+func (x *ConfigureRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ConfigureRequest.ProtoReflect.Descriptor instead.
+func (*ConfigureRequest) Descriptor() ([]byte, []int) {
+	return file_auth_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *ConfigureRequest) GetPayload() []byte {
+	if x != nil {
+		return x.Payload
+	}
+	return nil
+}
+
+type ConfigureResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Error         string                 `protobuf:"bytes,1,opt,name=error,proto3" json:"error,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ConfigureResponse) Reset() {
+	*x = ConfigureResponse{}
+	mi := &file_auth_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ConfigureResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ConfigureResponse) ProtoMessage() {}
+
+func (x *ConfigureResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ConfigureResponse.ProtoReflect.Descriptor instead.
+func (*ConfigureResponse) Descriptor() ([]byte, []int) {
+	return file_auth_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *ConfigureResponse) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
 type AllowRequest struct {
 	state         protoimpl.MessageState   `protogen:"open.v1"`
 	Method        string                   `protobuf:"bytes,1,opt,name=method,proto3" json:"method,omitempty"`
@@ -33,7 +121,7 @@ type AllowRequest struct {
 
 func (x *AllowRequest) Reset() {
 	*x = AllowRequest{}
-	mi := &file_auth_proto_msgTypes[0]
+	mi := &file_auth_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -45,7 +133,7 @@ func (x *AllowRequest) String() string {
 func (*AllowRequest) ProtoMessage() {}
 
 func (x *AllowRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_auth_proto_msgTypes[0]
+	mi := &file_auth_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -58,7 +146,7 @@ func (x *AllowRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AllowRequest.ProtoReflect.Descriptor instead.
 func (*AllowRequest) Descriptor() ([]byte, []int) {
-	return file_auth_proto_rawDescGZIP(), []int{0}
+	return file_auth_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *AllowRequest) GetMethod() string {
@@ -98,7 +186,7 @@ type HeaderValues struct {
 
 func (x *HeaderValues) Reset() {
 	*x = HeaderValues{}
-	mi := &file_auth_proto_msgTypes[1]
+	mi := &file_auth_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -110,7 +198,7 @@ func (x *HeaderValues) String() string {
 func (*HeaderValues) ProtoMessage() {}
 
 func (x *HeaderValues) ProtoReflect() protoreflect.Message {
-	mi := &file_auth_proto_msgTypes[1]
+	mi := &file_auth_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -123,7 +211,7 @@ func (x *HeaderValues) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HeaderValues.ProtoReflect.Descriptor instead.
 func (*HeaderValues) Descriptor() ([]byte, []int) {
-	return file_auth_proto_rawDescGZIP(), []int{1}
+	return file_auth_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *HeaderValues) GetValues() []string {
@@ -136,13 +224,14 @@ func (x *HeaderValues) GetValues() []string {
 type AllowResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Allowed       bool                   `protobuf:"varint,1,opt,name=allowed,proto3" json:"allowed,omitempty"`
+	Error         string                 `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *AllowResponse) Reset() {
 	*x = AllowResponse{}
-	mi := &file_auth_proto_msgTypes[2]
+	mi := &file_auth_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -154,7 +243,7 @@ func (x *AllowResponse) String() string {
 func (*AllowResponse) ProtoMessage() {}
 
 func (x *AllowResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_auth_proto_msgTypes[2]
+	mi := &file_auth_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -167,7 +256,7 @@ func (x *AllowResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AllowResponse.ProtoReflect.Descriptor instead.
 func (*AllowResponse) Descriptor() ([]byte, []int) {
-	return file_auth_proto_rawDescGZIP(), []int{2}
+	return file_auth_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *AllowResponse) GetAllowed() bool {
@@ -177,12 +266,23 @@ func (x *AllowResponse) GetAllowed() bool {
 	return false
 }
 
+func (x *AllowResponse) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
 var File_auth_proto protoreflect.FileDescriptor
 
 const file_auth_proto_rawDesc = "" +
 	"\n" +
 	"\n" +
-	"auth.proto\x12\x04auth\"\xbc\x02\n" +
+	"auth.proto\x12\x04auth\",\n" +
+	"\x10ConfigureRequest\x12\x18\n" +
+	"\apayload\x18\x01 \x01(\fR\apayload\")\n" +
+	"\x11ConfigureResponse\x12\x14\n" +
+	"\x05error\x18\x01 \x01(\tR\x05error\"\xbc\x02\n" +
 	"\fAllowRequest\x12\x16\n" +
 	"\x06method\x18\x01 \x01(\tR\x06method\x12\x12\n" +
 	"\x04path\x18\x02 \x01(\tR\x04path\x129\n" +
@@ -195,11 +295,13 @@ const file_auth_proto_rawDesc = "" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"&\n" +
 	"\fHeaderValues\x12\x16\n" +
-	"\x06values\x18\x01 \x03(\tR\x06values\")\n" +
+	"\x06values\x18\x01 \x03(\tR\x06values\"?\n" +
 	"\rAllowResponse\x12\x18\n" +
-	"\aallowed\x18\x01 \x01(\bR\aallowed2G\n" +
+	"\aallowed\x18\x01 \x01(\bR\aallowed\x12\x14\n" +
+	"\x05error\x18\x02 \x01(\tR\x05error2\x85\x01\n" +
 	"\x13AuthProviderService\x120\n" +
-	"\x05Allow\x12\x12.auth.AllowRequest\x1a\x13.auth.AllowResponseB\bZ\x06./authb\x06proto3"
+	"\x05Allow\x12\x12.auth.AllowRequest\x1a\x13.auth.AllowResponse\x12<\n" +
+	"\tConfigure\x12\x16.auth.ConfigureRequest\x1a\x17.auth.ConfigureResponseB\bZ\x06./authb\x06proto3"
 
 var (
 	file_auth_proto_rawDescOnce sync.Once
@@ -213,22 +315,26 @@ func file_auth_proto_rawDescGZIP() []byte {
 	return file_auth_proto_rawDescData
 }
 
-var file_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
 var file_auth_proto_goTypes = []any{
-	(*AllowRequest)(nil),  // 0: auth.AllowRequest
-	(*HeaderValues)(nil),  // 1: auth.HeaderValues
-	(*AllowResponse)(nil), // 2: auth.AllowResponse
-	nil,                   // 3: auth.AllowRequest.HeadersEntry
-	nil,                   // 4: auth.AllowRequest.CookiesEntry
+	(*ConfigureRequest)(nil),  // 0: auth.ConfigureRequest
+	(*ConfigureResponse)(nil), // 1: auth.ConfigureResponse
+	(*AllowRequest)(nil),      // 2: auth.AllowRequest
+	(*HeaderValues)(nil),      // 3: auth.HeaderValues
+	(*AllowResponse)(nil),     // 4: auth.AllowResponse
+	nil,                       // 5: auth.AllowRequest.HeadersEntry
+	nil,                       // 6: auth.AllowRequest.CookiesEntry
 }
 var file_auth_proto_depIdxs = []int32{
-	3, // 0: auth.AllowRequest.headers:type_name -> auth.AllowRequest.HeadersEntry
-	4, // 1: auth.AllowRequest.cookies:type_name -> auth.AllowRequest.CookiesEntry
-	1, // 2: auth.AllowRequest.HeadersEntry.value:type_name -> auth.HeaderValues
-	0, // 3: auth.AuthProviderService.Allow:input_type -> auth.AllowRequest
-	2, // 4: auth.AuthProviderService.Allow:output_type -> auth.AllowResponse
-	4, // [4:5] is the sub-list for method output_type
-	3, // [3:4] is the sub-list for method input_type
+	5, // 0: auth.AllowRequest.headers:type_name -> auth.AllowRequest.HeadersEntry
+	6, // 1: auth.AllowRequest.cookies:type_name -> auth.AllowRequest.CookiesEntry
+	3, // 2: auth.AllowRequest.HeadersEntry.value:type_name -> auth.HeaderValues
+	2, // 3: auth.AuthProviderService.Allow:input_type -> auth.AllowRequest
+	0, // 4: auth.AuthProviderService.Configure:input_type -> auth.ConfigureRequest
+	4, // 5: auth.AuthProviderService.Allow:output_type -> auth.AllowResponse
+	1, // 6: auth.AuthProviderService.Configure:output_type -> auth.ConfigureResponse
+	5, // [5:7] is the sub-list for method output_type
+	3, // [3:5] is the sub-list for method input_type
 	3, // [3:3] is the sub-list for extension type_name
 	3, // [3:3] is the sub-list for extension extendee
 	0, // [0:3] is the sub-list for field type_name
@@ -245,7 +351,7 @@ func file_auth_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_auth_proto_rawDesc), len(file_auth_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   5,
+			NumMessages:   7,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

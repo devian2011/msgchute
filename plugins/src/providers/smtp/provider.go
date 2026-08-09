@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto/tls"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"mime"
 	"mime/multipart"
@@ -12,6 +11,7 @@ import (
 	"net/textproto"
 	"strings"
 
+	"github.com/bytedance/sonic"
 	"github.com/hashicorp/go-plugin"
 
 	"github.com/devian2011/msgchute/pkg/shared/provider"
@@ -50,7 +50,7 @@ type SmtpProvider struct {
 // Configure parses the plugin configuration.
 func (s *SmtpProvider) Configure(params []byte) error {
 	var config SmtpConfig
-	if err := json.Unmarshal(params, &config); err != nil {
+	if err := sonic.Unmarshal(params, &config); err != nil {
 		return fmt.Errorf("failed to parse smtp config: %w", err)
 	}
 	// Validate required fields
@@ -61,17 +61,13 @@ func (s *SmtpProvider) Configure(params []byte) error {
 	return nil
 }
 
-// sendMailFunc is a variable that holds the actual SMTP send function.
-// It can be overridden in tests to mock the SMTP call.
-var sendMailFunc = smtp.SendMail
-
 // Send sends an email via SMTP with optional attachments.
 // Returns *provider.MessageResponse as required by the interface.
 func (s *SmtpProvider) Send(msg *provider.Message) *provider.MessageResponse {
 	// Parse additional options from params
 	var opts SendOptions
 	if len(msg.Params) > 0 {
-		if err := json.Unmarshal(msg.Params, &opts); err != nil {
+		if err := sonic.Unmarshal(msg.Params, &opts); err != nil {
 			return &provider.MessageResponse{
 				Err:        fmt.Errorf("failed to parse send options: %w", err),
 				IsCritical: true,

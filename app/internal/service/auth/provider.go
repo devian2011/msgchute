@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"os/exec"
 
+	"github.com/bytedance/sonic"
 	"github.com/hashicorp/go-plugin"
 
 	"github.com/devian2011/msgchute/pkg/file"
 	"github.com/devian2011/msgchute/pkg/shared/auth"
-	"github.com/devian2011/msgchute/pkg/shared/provider"
 )
 
 type Provider struct {
@@ -19,8 +19,8 @@ type Provider struct {
 	client   *plugin.Client
 }
 
-func NewProvider(ctx context.Context, pluginPath string) (*Provider, error) {
-	c, p, initErr := initProvider(pluginPath)
+func NewProvider(ctx context.Context, cfg *Config) (*Provider, error) {
+	c, p, initErr := initProvider(cfg)
 	if initErr != nil {
 		return nil, initErr
 	}
@@ -32,34 +32,45 @@ func NewProvider(ctx context.Context, pluginPath string) (*Provider, error) {
 	}, nil
 }
 
-func initProvider(pluginPath string) (*plugin.Client, auth.Provider, error) {
-	if !file.Exists(pluginPath) {
-		return nil, nil, fmt.Errorf("auth plugin binary not found at %s", pluginPath)
+func initProvider(cfg *Config) (*plugin.Client, auth.Provider, error) {
+	if !file.Exists(cfg.Plugin) {
+		return nil, nil, fmt.Errorf("auth plugin binary not found at %s", cfg.Plugin)
 	}
 
 	client := plugin.NewClient(&plugin.ClientConfig{
-		HandshakeConfig:  provider.HandshakeConfig,
-		Plugins:          provider.PluginMap,
-		Cmd:              exec.Command(pluginPath),
+		HandshakeConfig:  auth.HandshakeConfig,
+		Plugins:          auth.PluginMap,
+		Cmd:              exec.Command(cfg.Plugin),
 		AllowedProtocols: []plugin.Protocol{plugin.ProtocolGRPC},
 	})
 
 	rpcClient, err := client.Client()
 	if err != nil {
 		client.Kill()
-		return nil, nil, fmt.Errorf("handshake failed for auth provider: %s", err)
+		return nil, nil, fmt.Errorf("handshake failed for auth provider: %w", err)
 	}
 
-	raw, err := rpcClient.Dispense("provider")
+	raw, err := rpcClient.Dispense("auth_provider") // исправлен ключ
 	if err != nil {
 		client.Kill()
-		return nil, nil, errors.New("plugin auth does not implement 'provider': auth.Provider")
+		return nil, nil, fmt.Errorf("plugin does not implement auth_provider: %w", err)
 	}
 
 	p, ok := raw.(auth.Provider)
 	if !ok {
 		client.Kill()
 		return nil, nil, errors.New("type assertion failed for auth plugin")
+	}
+
+	paramsJSON, err := sonic.ConfigDefault.Marshal(cfg.Params)
+	if err != nil {
+		client.Kill()
+		return nil, nil, fmt.Errorf("failed to marshal auth config: %w", err)
+	}
+
+	if err := p.Configure(paramsJSON); err != nil {
+		client.Kill()
+		return nil, nil, fmt.Errorf("failed to configure auth plugin: %w", err)
 	}
 
 	return client, p, nil

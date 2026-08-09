@@ -6,6 +6,15 @@ option go_package = "./auth";
 
 service AuthProviderService {
   rpc Allow (AllowRequest) returns (AllowResponse);
+  rpc Configure (ConfigureRequest) returns (ConfigureResponse);
+}
+
+message ConfigureRequest {
+  bytes payload = 1;
+}
+
+message ConfigureResponse {
+  string error = 1;
 }
 
 message AllowRequest {
@@ -21,4 +30,5 @@ message HeaderValues {
 
 message AllowResponse {
   bool allowed = 1;
+  string error = 2;
 }

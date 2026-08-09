@@ -6,4 +6,5 @@ use (
 	./plugins/src/providers/smtp
 	./plugins/src/providers/telegram
 	pkg/shared/auth
+	plugins/src/auth/base
 )

@@ -113,7 +113,7 @@ func initAuth(ctx context.Context, cfg *auth.Config) (*auth.Provider, *auth.Http
 		return nil, auth.NewMiddleware(&auth.EmptyAuthProvider{}), nil
 	}
 
-	apClient, apInitErr := auth.NewProvider(ctx, cfg.Plugin)
+	apClient, apInitErr := auth.NewProvider(ctx, cfg)
 	if apInitErr != nil {
 		return nil, nil, apInitErr
 	}

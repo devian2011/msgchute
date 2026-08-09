@@ -2,10 +2,10 @@ package main
 
 import (
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"strconv"
 
+	"github.com/bytedance/sonic"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/hashicorp/go-plugin"
 
@@ -45,7 +45,7 @@ var newBotAPI = func(token string) (*tgbotapi.BotAPI, error) {
 // Configure parses the plugin configuration.
 func (s *TgProvider) Configure(params []byte) error {
 	var config Config
-	if err := json.Unmarshal(params, &config); err != nil {
+	if err := sonic.Unmarshal(params, &config); err != nil {
 		return fmt.Errorf("failed to parse telegram config: %w", err)
 	}
 	if config.Token == "" {
@@ -75,7 +75,7 @@ func (s *TgProvider) Send(msg *provider.Message) *provider.MessageResponse {
 
 	var opts SendOptions
 	if len(msg.Params) > 0 {
-		if err := json.Unmarshal(msg.Params, &opts); err != nil {
+		if err := sonic.Unmarshal(msg.Params, &opts); err != nil {
 			return &provider.MessageResponse{
 				Err:        fmt.Errorf("failed to parse send options: %w", err),
 				IsCritical: true,

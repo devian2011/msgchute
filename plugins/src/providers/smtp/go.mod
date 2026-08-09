@@ -3,6 +3,7 @@ module github.com/devian2011/msgchute/plugins/src/providers/smtp
 go 1.25.10
 
 require (
+	github.com/bytedance/sonic v1.15.2
 	github.com/hashicorp/go-plugin v1.8.0
 	github.com/stretchr/testify v1.11.1
 )

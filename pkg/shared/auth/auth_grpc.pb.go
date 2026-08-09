@@ -19,7 +19,8 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	AuthProviderService_Allow_FullMethodName = "/auth.AuthProviderService/Allow"
+	AuthProviderService_Allow_FullMethodName     = "/auth.AuthProviderService/Allow"
+	AuthProviderService_Configure_FullMethodName = "/auth.AuthProviderService/Configure"
 )
 
 // AuthProviderServiceClient is the client API for AuthProviderService service.
@@ -27,6 +28,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type AuthProviderServiceClient interface {
 	Allow(ctx context.Context, in *AllowRequest, opts ...grpc.CallOption) (*AllowResponse, error)
+	Configure(ctx context.Context, in *ConfigureRequest, opts ...grpc.CallOption) (*ConfigureResponse, error)
 }
 
 type authProviderServiceClient struct {
@@ -47,11 +49,22 @@ func (c *authProviderServiceClient) Allow(ctx context.Context, in *AllowRequest,
 	return out, nil
 }
 
+func (c *authProviderServiceClient) Configure(ctx context.Context, in *ConfigureRequest, opts ...grpc.CallOption) (*ConfigureResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ConfigureResponse)
+	err := c.cc.Invoke(ctx, AuthProviderService_Configure_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AuthProviderServiceServer is the server API for AuthProviderService service.
 // All implementations must embed UnimplementedAuthProviderServiceServer
 // for forward compatibility.
 type AuthProviderServiceServer interface {
 	Allow(context.Context, *AllowRequest) (*AllowResponse, error)
+	Configure(context.Context, *ConfigureRequest) (*ConfigureResponse, error)
 	mustEmbedUnimplementedAuthProviderServiceServer()
 }
 
@@ -64,6 +77,9 @@ type UnimplementedAuthProviderServiceServer struct{}
 
 func (UnimplementedAuthProviderServiceServer) Allow(context.Context, *AllowRequest) (*AllowResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Allow not implemented")
+}
+func (UnimplementedAuthProviderServiceServer) Configure(context.Context, *ConfigureRequest) (*ConfigureResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Configure not implemented")
 }
 func (UnimplementedAuthProviderServiceServer) mustEmbedUnimplementedAuthProviderServiceServer() {}
 func (UnimplementedAuthProviderServiceServer) testEmbeddedByValue()                             {}
@@ -104,6 +120,24 @@ func _AuthProviderService_Allow_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AuthProviderService_Configure_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ConfigureRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthProviderServiceServer).Configure(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthProviderService_Configure_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthProviderServiceServer).Configure(ctx, req.(*ConfigureRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AuthProviderService_ServiceDesc is the grpc.ServiceDesc for AuthProviderService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -114,6 +148,10 @@ var AuthProviderService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Allow",
 			Handler:    _AuthProviderService_Allow_Handler,
+		},
+		{
+			MethodName: "Configure",
+			Handler:    _AuthProviderService_Configure_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
