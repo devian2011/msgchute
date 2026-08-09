@@ -14,15 +14,15 @@ type messageRecipientFinder interface {
 }
 
 type MessageRecipientFindHandler struct {
-	getter messageDictionaryGetter
+	getter messageRecipientFinder
 }
 
-func NewMessageRecipientFindHandler(getter messageDictionaryGetter) *MessageRecipientFindHandler {
+func NewMessageRecipientFindHandler(getter messageRecipientFinder) *MessageRecipientFindHandler {
 	return &MessageRecipientFindHandler{getter: getter}
 }
 
 func (h *MessageRecipientFindHandler) Handle(ctx context.Context, search string) ([]string, error) {
-
+	return h.getter.GetRecipients(ctx, search)
 }
 
 type messageDictionaryGetter interface {
