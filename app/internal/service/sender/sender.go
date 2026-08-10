@@ -59,9 +59,14 @@ func (s *Sender) Init() error {
 			return bPluginErr
 		}
 
+		w := retrier.NewWorker(s.ctx, s.sendFunc)
+		w.SetMinAndMaxWorkers(
+			int32(pCfg.RetrierSettings.Workers.Min),
+			int32(pCfg.RetrierSettings.Workers.Max))
+
 		regErr := s.wm.RegisterWorker(
 			pName,
-			retrier.NewWorker(s.ctx, s.sendFunc),
+			w,
 			retrier.NewSlidingWindowCircuitBreaker(
 				pCfg.RetrierSettings.Breaker.WindowSize,
 				pCfg.RetrierSettings.Breaker.FailureThreshold,

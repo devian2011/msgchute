@@ -20,7 +20,7 @@ import (
 // SmtpConfig holds the SMTP server settings. Provided during Configure.
 type SmtpConfig struct {
 	Host     string `json:"host"`
-	Port     int    `json:"port"`
+	Port     string `json:"port"`
 	Username string `json:"username"`
 	Password string `json:"password"`
 	From     string `json:"from,omitempty"` // can be overridden in Send
@@ -54,7 +54,7 @@ func (s *SmtpProvider) Configure(params []byte) error {
 		return fmt.Errorf("failed to parse smtp config: %w", err)
 	}
 	// Validate required fields
-	if config.Host == "" || config.Port == 0 || config.Username == "" || config.Password == "" {
+	if len(config.Host) == 0 || len(config.Port) == 0 || len(config.Username) == 0 || len(config.Password) == 0 {
 		return fmt.Errorf("missing required smtp config fields (host, port, username, password)")
 	}
 	s.config = config
@@ -108,7 +108,7 @@ func (s *SmtpProvider) Send(msg *provider.Message) *provider.MessageResponse {
 		}
 	}
 
-	addr := fmt.Sprintf("%s:%d", s.config.Host, s.config.Port)
+	addr := fmt.Sprintf("%s:%s", s.config.Host, s.config.Port)
 
 	tlsConfig := &tls.Config{
 		ServerName: s.config.Host,

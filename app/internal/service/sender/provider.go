@@ -75,7 +75,7 @@ func (m *ProviderManager) BuildPlugin(name string, code string, params []byte) e
 	}
 
 	configureErr := p.Configure(params)
-	if code == "" {
+	if configureErr != nil {
 		client.Kill()
 		return fmt.Errorf("plugin %s: '%s' configure error: %s", name, code, configureErr)
 	}
