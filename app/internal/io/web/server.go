@@ -17,7 +17,8 @@ type Config struct {
 		CertFile string `env:"APP_HTTP_CERT_FILE" yaml:"certFile"`
 		KeyFile  string `env:"APP_HTTP_KEY_FILE" yaml:"keyFile"`
 	} `yaml:"tls"`
-	WithSwagger bool `env:"APP_HTTP_WITH_SWAGGER" yaml:"withSwagger"`
+	WithSwagger bool   `env:"APP_HTTP_WITH_SWAGGER" yaml:"withSwagger"`
+	Dashboard   string `env:"APP_HTTP_WITH_DASHBOARD" yaml:"dashboard"`
 }
 
 type Server struct {
@@ -39,6 +40,10 @@ func NewServer(cfg *Config) *Server {
 
 func (s *Server) WithSwagger() bool {
 	return s.cfg.WithSwagger
+}
+
+func (s *Server) Dashboard() string {
+	return s.cfg.Dashboard
 }
 
 func (s *Server) SetHandler(h http.Handler) {

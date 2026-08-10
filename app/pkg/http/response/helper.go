@@ -2,22 +2,23 @@ package response
 
 import (
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
-	"github.com/gorilla/mux"
 )
 
 func GetUUIDParam(key string, w http.ResponseWriter, r *http.Request) (uuid.UUID, error) {
-	params := mux.Vars(r)
-	if _, exists := params["id"]; !exists {
-		WriteErrorResponse(w, r, http.StatusBadRequest, errors.New("not set id"))
+	param := chi.URLParam(r, key)
+	if len(param) == 0 {
+		WriteErrorResponse(w, r, http.StatusBadRequest, fmt.Errorf("not set %s", key))
 		return uuid.Nil, errors.New("not set param: " + key)
 	}
-	cId, parseErr := uuid.Parse(params["id"])
+	cId, parseErr := uuid.Parse(param)
 	if parseErr != nil {
-		slog.Error("wrong id", "id", params["id"])
+		slog.Error("wrong id", key, param)
 		WriteErrorResponse(w, r, http.StatusBadRequest, errors.New("wrong id"))
 		return uuid.Nil, errors.New("cannot parse param: " + key)
 	}
@@ -26,13 +27,15 @@ func GetUUIDParam(key string, w http.ResponseWriter, r *http.Request) (uuid.UUID
 }
 
 func GetParams(keys []string, r *http.Request) map[string]string {
-	params := mux.Vars(r)
 	result := make(map[string]string, len(keys))
 
 	for _, k := range keys {
-		if val, exists := params[k]; exists {
-			result[k] = val
+		param := chi.URLParam(r, k)
+		if len(param) == 0 {
+			continue
 		}
+
+		result[k] = param
 	}
 
 	return result

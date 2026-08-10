@@ -3,6 +3,9 @@ package route
 import (
 	"log/slog"
 	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -49,6 +52,29 @@ func RegisterRoutes(s *web.Server, handlers *registry.Handlers, m *registry.Midd
 		r.Get("/api/swagger/*", httpSwagger.Handler(
 			httpSwagger.URL("/api/swagger/doc.json"),
 		))
+	}
+
+	dashboard := s.Dashboard()
+
+	if len(dashboard) > 0 {
+		rootFS := os.DirFS(dashboard)
+		r.Get("/*", func(w http.ResponseWriter, r *http.Request) {
+			path := r.URL.Path
+			cleanedPath := strings.TrimPrefix(path, "/")
+			f, err := rootFS.Open(cleanedPath)
+			if err == nil {
+				f.Close()
+				http.FileServer(http.FS(rootFS)).ServeHTTP(w, r)
+				return
+			}
+			indexPath := filepath.Join(dashboard, "index.html")
+			http.ServeFile(w, r, indexPath)
+		})
+	} else {
+		r.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
+			writer.WriteHeader(http.StatusOK)
+			writer.Write([]byte("pong"))
+		})
 	}
 
 	r = managementAPI(r, handlers)
@@ -100,11 +126,6 @@ func managementAPI(r *chi.Mux, handlers *registry.Handlers) *chi.Mux {
 }
 
 func publicAPI(r *chi.Mux, handlers *registry.Handlers) *chi.Mux {
-	r.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
-		writer.WriteHeader(http.StatusOK)
-		writer.Write([]byte("pong"))
-	})
-
 	r.HandleFunc("/ping", func(writer http.ResponseWriter, request *http.Request) {
 		writer.WriteHeader(http.StatusOK)
 		writer.Write([]byte("pong"))
