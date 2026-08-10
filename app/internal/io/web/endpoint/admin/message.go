@@ -25,23 +25,23 @@ func NewMessageRecipientFinderEndpoint(h messageRecipientFindHandler) *MessageRe
 	return &MessageRecipientFinderEndpoint{h: h}
 }
 
-//	@Summary		Get recipients list
-//	@Description	Returns a list of unique recipient addresses (emails, phone numbers, etc.) from all messages.
-//	@Description	If the `search` parameter is provided, the result is filtered by case‑insensitive substring match.
-//	@Tags			messages
-//	@Accept			json
-//	@Produce		json
-//	@Param			search	query		string				false	"Search substring to filter recipients (case‑insensitive). If empty, all recipients are returned."
-//	@Success		200		{array}		string				"List of recipient addresses"
-//	@Failure		500		{object}	response.Response	"Internal server error"
-//	@Router			/api/admin/v1/dictionary/message-recipients [get]
+// @Summary		Get recipients list
+// @Description	Returns a list of unique recipient addresses (emails, phone numbers, etc.) from all messages.
+// @Description	If the `search` parameter is provided, the result is filtered by case‑insensitive substring match.
+// @Tags			messages
+// @Accept			json
+// @Produce		json
+// @Param			search	query		string				false	"Search substring to filter recipients (case‑insensitive). If empty, all recipients are returned."
+// @Success		200		{array}		string				"List of recipient addresses"
+// @Failure		500		{object}	response.Response	"Internal server error"
+// @Router			/api/admin/v1/dictionary/message-recipients [get]
 func (e *MessageRecipientFinderEndpoint) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	result, err := e.h.Handle(r.Context(), r.URL.Query().Get("search"))
 	if err != nil {
-		response.WriteErrorResponse(w, http.StatusInternalServerError, err)
+		response.WriteErrorResponse(w, r, http.StatusInternalServerError, err)
 		return
 	}
-	response.WriteSuccessResponse(w, http.StatusOK, result)
+	response.WriteSuccessResponse(w, r, http.StatusOK, result)
 }
 
 type messageDictionaryHandler interface {
@@ -56,21 +56,21 @@ func NewMessageDictionaryEndpoint(h messageDictionaryHandler) *MessageDictionary
 	return &MessageDictionaryEndpoint{h: h}
 }
 
-//	@Summary		Get message dictionaries
-//	@Description	Returns reference data used for filtering messages: available transports, statuses, template codes, and senders.
-//	@Tags			messages
-//	@Accept			json
-//	@Produce		json
-//	@Success		200	{object}	dto.MessageDictionaries	"Successfully returned dictionary data"
-//	@Failure		500	{object}	response.Response		"Internal server error"
-//	@Router			/api/admin/v1/dictionary/message [get]
+// @Summary		Get message dictionaries
+// @Description	Returns reference data used for filtering messages: available transports, statuses, template codes, and senders.
+// @Tags			messages
+// @Accept			json
+// @Produce		json
+// @Success		200	{object}	dto.MessageDictionaries	"Successfully returned dictionary data"
+// @Failure		500	{object}	response.Response		"Internal server error"
+// @Router			/api/admin/v1/dictionary/message [get]
 func (e *MessageDictionaryEndpoint) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	result, err := e.h.Handle(r.Context())
 	if err != nil {
-		response.WriteErrorResponse(w, http.StatusInternalServerError, err)
+		response.WriteErrorResponse(w, r, http.StatusInternalServerError, err)
 		return
 	}
-	response.WriteSuccessResponse(w, http.StatusOK, result)
+	response.WriteSuccessResponse(w, r, http.StatusOK, result)
 }
 
 type MessageFilterRequest struct {
@@ -151,10 +151,10 @@ func (e *MessageFinderEndpoint) ServeHTTP(w http.ResponseWriter, r *http.Request
 
 	messages, totalCnt, getErr := e.h.Handle(filter)
 	if getErr != nil {
-		response.WriteErrorResponse(w, http.StatusInternalServerError, getErr)
+		response.WriteErrorResponse(w, r, http.StatusInternalServerError, getErr)
 		return
 	}
-	response.WriteSuccessResponse(w, http.StatusOK, MessageFinderResponse{
+	response.WriteSuccessResponse(w, r, http.StatusOK, MessageFinderResponse{
 		Messages: messages,
 		Pagination: pagination.PageData{
 			CurrentPage: page,
@@ -197,8 +197,8 @@ func (e *MessageFinderByIDEndpoint) ServeHTTP(w http.ResponseWriter, r *http.Req
 
 	msg, msgGetErr := e.h.Handle(ID)
 	if msgGetErr != nil {
-		response.WriteErrorResponse(w, http.StatusInternalServerError, msgGetErr)
+		response.WriteErrorResponse(w, r, http.StatusInternalServerError, msgGetErr)
 		return
 	}
-	response.WriteSuccessResponse(w, http.StatusOK, msg)
+	response.WriteSuccessResponse(w, r, http.StatusOK, msg)
 }

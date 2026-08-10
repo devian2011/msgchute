@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"sync"
 
+	"github.com/ValerySidorin/shclog"
 	"github.com/hashicorp/go-plugin"
 
 	"github.com/devian2011/msgchute/pkg/file"
@@ -54,6 +55,7 @@ func (m *ProviderManager) BuildPlugin(name string, code string, params []byte) e
 		Plugins:          provider.PluginMap,
 		Cmd:              exec.Command(m.pluginMap[code]),
 		AllowedProtocols: []plugin.Protocol{plugin.ProtocolGRPC},
+		Logger:           shclog.New(slog.Default()),
 	})
 
 	rpcClient, err := client.Client()

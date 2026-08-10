@@ -20,11 +20,11 @@ func (m *HttpMiddleware) Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		allow, authErr := m.p.Allow(r.Context(), r)
 		if authErr != nil {
-			response.WriteErrorResponse(w, http.StatusInternalServerError, authErr)
+			response.WriteErrorResponse(w, r, http.StatusInternalServerError, authErr)
 			return
 		}
 		if !allow {
-			response.WriteErrorResponse(w, http.StatusForbidden, errors.New("forbidden"))
+			response.WriteErrorResponse(w, r, http.StatusForbidden, errors.New("forbidden"))
 			return
 		}
 

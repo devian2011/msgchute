@@ -43,7 +43,7 @@ func NewMessagePreviewEndpoint(h previewHandler) *MessagePreviewEndpoint {
 func (e *MessagePreviewEndpoint) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var req PreviewMessageRequest
 	if decodeErr := sonic.ConfigDefault.NewDecoder(r.Body).Decode(&req); decodeErr != nil {
-		response.WriteErrorResponse(w, http.StatusBadRequest, decodeErr)
+		response.WriteErrorResponse(w, r, http.StatusBadRequest, decodeErr)
 		return
 	}
 	msg := &dto.Message{
@@ -55,8 +55,8 @@ func (e *MessagePreviewEndpoint) ServeHTTP(w http.ResponseWriter, r *http.Reques
 
 	preview, previewErr := e.h.Handle(msg)
 	if previewErr != nil {
-		response.WriteErrorResponse(w, http.StatusInternalServerError, previewErr)
+		response.WriteErrorResponse(w, r, http.StatusInternalServerError, previewErr)
 		return
 	}
-	response.WriteSuccessResponse(w, http.StatusOK, preview)
+	response.WriteSuccessResponse(w, r, http.StatusOK, preview)
 }

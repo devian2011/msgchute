@@ -1,9 +1,14 @@
 package route
 
 import (
+	"log/slog"
 	"net/http"
+	"time"
 
-	"github.com/gorilla/mux"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
+	"github.com/go-chi/httplog/v3"
 	"github.com/swaggo/http-swagger/v2"
 
 	"github.com/devian2011/msgchute/internal/io/web"
@@ -13,16 +18,35 @@ import (
 )
 
 func RegisterRoutes(s *web.Server, handlers *registry.Handlers, m *registry.Middlewares) {
-	r := mux.NewRouter()
+	r := chi.NewRouter()
 
-	r.Use(appJsonMiddleware)
-	r.Use(corsMiddleware)
+	r.Use(
+		middleware.RequestID,
+		middleware.ClientIPFromRemoteAddr,
+		cors.Handler(cors.Options{
+			AllowedOrigins:   []string{"*"},
+			AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+			AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-Token"},
+			AllowCredentials: true,
+		}),
+		httplog.RequestLogger(
+			slog.Default(),
+			&httplog.Options{
+				Level:  slog.LevelInfo,
+				Schema: httplog.SchemaOTEL,
+			},
+		),
+		middleware.Recoverer,
+		middleware.Timeout(15*time.Second),
+		m.Auth.Middleware,
+	)
+
 	r.Use(m.Auth.Middleware)
 
-	r.PathPrefix("/").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}).Methods(http.MethodOptions)
+	r.Options("/*", func(w http.ResponseWriter, r *http.Request) {})
 
 	if s.WithSwagger() {
-		r.PathPrefix("/api/swagger/").Handler(httpSwagger.Handler(
+		r.Get("/api/swagger/*", httpSwagger.Handler(
 			httpSwagger.URL("/api/swagger/doc.json"),
 		))
 	}
@@ -33,36 +57,49 @@ func RegisterRoutes(s *web.Server, handlers *registry.Handlers, m *registry.Midd
 	s.SetHandler(r)
 }
 
-func managementAPI(r *mux.Router, handlers *registry.Handlers) *mux.Router {
-	r.Handle("/api/admin/v1/template", admin.NewTemplateFinderEndpoint(handlers.Admin.TemplateFinder)).
-		Methods(http.MethodGet)
-	r.Handle("/api/admin/v1/template", admin.NewTemplateCreationEndpoint(handlers.Admin.TemplateCreator)).
-		Methods(http.MethodPost)
-	r.Handle("/api/admin/v1/template/{code}", admin.NewTemplateUpdateEndpoint(handlers.Admin.TemplateUpdater)).
-		Methods(http.MethodPut)
+func managementAPI(r *chi.Mux, handlers *registry.Handlers) *chi.Mux {
+	r.Method(
+		http.MethodGet,
+		"/api/admin/v1/template",
+		admin.NewTemplateFinderEndpoint(handlers.Admin.TemplateFinder))
+	r.Method(
+		http.MethodPost,
+		"/api/admin/v1/template",
+		admin.NewTemplateCreationEndpoint(handlers.Admin.TemplateCreator))
+	r.Method(
+		http.MethodPut,
+		"/api/admin/v1/template/{code}",
+		admin.NewTemplateUpdateEndpoint(handlers.Admin.TemplateUpdater))
 
-	r.Handle("/api/admin/v1/message", admin.NewMessageFinderEndpoint(handlers.Admin.MessageFinder)).
-		Methods(http.MethodGet)
-	r.Handle("/api/admin/v1/message/{id}", admin.NewMessageFinderByIDEndpoint(handlers.Admin.MessageFindByID)).
-		Methods(http.MethodGet)
+	r.Method(
+		http.MethodGet,
+		"/api/admin/v1/message",
+		admin.NewMessageFinderEndpoint(handlers.Admin.MessageFinder))
 
-	r.Handle(
+	r.Method(
+		http.MethodGet,
+		"/api/admin/v1/message/{id}",
+		admin.NewMessageFinderByIDEndpoint(handlers.Admin.MessageFindByID))
+
+	r.Method(
+		http.MethodGet,
 		"/api/admin/v1/dictionary/message",
-		admin.NewMessageDictionaryEndpoint(handlers.Admin.MessageDictionary),
-	).Methods(http.MethodGet)
+		admin.NewMessageDictionaryEndpoint(handlers.Admin.MessageDictionary))
 
-	r.Handle(
+	r.Method(
+		http.MethodGet,
 		"/api/admin/v1/dictionary/message-recipients",
-		admin.NewMessageRecipientFinderEndpoint(handlers.Admin.MessageRecipientFinder),
-	).Methods(http.MethodGet)
+		admin.NewMessageRecipientFinderEndpoint(handlers.Admin.MessageRecipientFinder))
 
-	r.Handle("/api/admin/v1/workers/status", admin.NewWorkerStatusEndpoint(handlers.Admin.WorkerStatus)).
-		Methods(http.MethodGet)
+	r.Method(
+		http.MethodGet,
+		"/api/admin/v1/workers/status",
+		admin.NewWorkerStatusEndpoint(handlers.Admin.WorkerStatus))
 
 	return r
 }
 
-func publicAPI(r *mux.Router, handlers *registry.Handlers) *mux.Router {
+func publicAPI(r *chi.Mux, handlers *registry.Handlers) *chi.Mux {
 	r.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
 		writer.WriteHeader(http.StatusOK)
 		writer.Write([]byte("pong"))
@@ -73,14 +110,18 @@ func publicAPI(r *mux.Router, handlers *registry.Handlers) *mux.Router {
 		writer.Write([]byte("pong"))
 	})
 
-	r.Handle("/api/v1/send", public.NewSenderEndpoint(handlers.Public.Sender)).
-		Methods(http.MethodPost)
-	r.Handle("/api/v1/batch/send", public.NewBatchSenderEndpoint(handlers.Public.BatchSender)).
-		Methods(http.MethodPost)
-	r.Handle("/api/v1/preview", public.NewMessagePreviewEndpoint(handlers.Public.Preview)).
-		Methods(http.MethodPost)
-	r.Handle("/api/v1/message/retry", public.NewMessageRetryEndpoint(handlers.Public.Retrier)).
-		Methods(http.MethodPost)
+	r.Method(http.MethodPost,
+		"/api/v1/send",
+		public.NewSenderEndpoint(handlers.Public.Sender))
+	r.Method(http.MethodPost,
+		"/api/v1/batch/send",
+		public.NewBatchSenderEndpoint(handlers.Public.BatchSender))
+	r.Method(http.MethodPost,
+		"/api/v1/preview",
+		public.NewMessagePreviewEndpoint(handlers.Public.Preview))
+	r.Method(http.MethodPost,
+		"/api/v1/message/retry",
+		public.NewMessageRetryEndpoint(handlers.Public.Retrier))
 
 	return r
 }

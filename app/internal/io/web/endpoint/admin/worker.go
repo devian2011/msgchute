@@ -22,5 +22,5 @@ func NewWorkerStatusEndpoint(h workerStatusHandler) *WorkerStatusEndpoint {
 
 func (h *WorkerStatusEndpoint) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	states := h.h.Handle()
-	response.WriteSuccessResponse(w, http.StatusOK, states)
+	response.WriteSuccessResponse(w, r, http.StatusOK, states)
 }

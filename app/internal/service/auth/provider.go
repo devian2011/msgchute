@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os/exec"
 
+	"github.com/ValerySidorin/shclog"
 	"github.com/bytedance/sonic"
 	"github.com/hashicorp/go-plugin"
 
@@ -42,6 +44,7 @@ func initProvider(cfg *Config) (*plugin.Client, auth.Provider, error) {
 		Plugins:          auth.PluginMap,
 		Cmd:              exec.Command(cfg.Plugin),
 		AllowedProtocols: []plugin.Protocol{plugin.ProtocolGRPC},
+		Logger:           shclog.New(slog.Default()),
 	})
 
 	rpcClient, err := client.Client()
@@ -72,6 +75,12 @@ func initProvider(cfg *Config) (*plugin.Client, auth.Provider, error) {
 		client.Kill()
 		return nil, nil, fmt.Errorf("failed to configure auth plugin: %w", err)
 	}
+
+	slog.Info("successfully mounted channel",
+		"name", "auth",
+		"code", "auth",
+		"path", cfg.Plugin,
+	)
 
 	return client, p, nil
 }

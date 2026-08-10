@@ -3,10 +3,14 @@ package main
 import (
 	"encoding/base64"
 	"fmt"
+	"log/slog"
+	"os"
 	"strconv"
 
 	"github.com/bytedance/sonic"
+	"github.com/evanphx/go-hclog-slog/hclogslog"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
 
 	"github.com/devian2011/msgchute/pkg/shared/provider"
@@ -145,11 +149,19 @@ func (s *TgProvider) Send(msg *provider.Message) *provider.MessageResponse {
 }
 
 func main() {
+	hcLogger := hclog.New(&hclog.LoggerOptions{
+		Name:   "tg",
+		Output: os.Stderr,
+		Level:  hclog.Debug,
+	})
+	slog.SetDefault(slog.New(hclogslog.Adapt(hcLogger)))
+
 	plugin.Serve(&plugin.ServeConfig{
 		HandshakeConfig: provider.HandshakeConfig,
 		Plugins: map[string]plugin.Plugin{
 			"provider": &provider.ProviderPlugin{Provider: &TgProvider{}},
 		},
 		GRPCServer: plugin.DefaultGRPCServer,
+		Logger:     hcLogger,
 	})
 }

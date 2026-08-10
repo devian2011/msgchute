@@ -86,10 +86,10 @@ func (e *TemplateFinderEndpoint) ServeHTTP(w http.ResponseWriter, r *http.Reques
 
 	templates, totalCnt, getErr := e.h.Handle(filter)
 	if getErr != nil {
-		response.WriteErrorResponse(w, http.StatusInternalServerError, getErr)
+		response.WriteErrorResponse(w, r, http.StatusInternalServerError, getErr)
 		return
 	}
-	response.WriteSuccessResponse(w, http.StatusOK, TemplateFinderResult{
+	response.WriteSuccessResponse(w, r, http.StatusOK, TemplateFinderResult{
 		Templates: templates,
 		Pagination: pagination.PageData{
 			CurrentPage: page,
@@ -128,15 +128,15 @@ func NewTemplateCreationEndpoint(h templateCreationHandler) *TemplateCreationEnd
 func (e *TemplateCreationEndpoint) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var template *dto.Template
 	if encodeErr := sonic.ConfigDefault.NewDecoder(r.Body).Decode(&template); encodeErr != nil {
-		response.WriteErrorResponse(w, http.StatusBadRequest, encodeErr)
+		response.WriteErrorResponse(w, r, http.StatusBadRequest, encodeErr)
 		return
 	}
 	tmpl, createErr := e.h.Handle(template)
 	if createErr != nil {
-		response.WriteErrorResponse(w, http.StatusInternalServerError, createErr)
+		response.WriteErrorResponse(w, r, http.StatusInternalServerError, createErr)
 		return
 	}
-	response.WriteSuccessResponse(w, http.StatusOK, tmpl)
+	response.WriteSuccessResponse(w, r, http.StatusOK, tmpl)
 }
 
 // Template Update
@@ -169,22 +169,22 @@ func (e *TemplateUpdateEndpoint) ServeHTTP(w http.ResponseWriter, r *http.Reques
 	params := response.GetParams([]string{"code"}, r)
 	code, exists := params["code"]
 	if !exists {
-		response.WriteErrorResponse(w, http.StatusBadRequest, fmt.Errorf("code is required"))
+		response.WriteErrorResponse(w, r, http.StatusBadRequest, fmt.Errorf("code is required"))
 		return
 	}
 
 	var template *dto.Template
 	if decodeErr := sonic.ConfigDefault.NewDecoder(r.Body).Decode(&template); decodeErr != nil {
-		response.WriteErrorResponse(w, http.StatusBadRequest, decodeErr)
+		response.WriteErrorResponse(w, r, http.StatusBadRequest, decodeErr)
 		return
 	}
 	template.Code = code
 
 	tmpl, updateErr := e.h.Handle(template)
 	if updateErr != nil {
-		response.WriteErrorResponse(w, http.StatusInternalServerError, updateErr)
+		response.WriteErrorResponse(w, r, http.StatusInternalServerError, updateErr)
 		return
 	}
 
-	response.WriteSuccessResponse(w, http.StatusOK, tmpl)
+	response.WriteSuccessResponse(w, r, http.StatusOK, tmpl)
 }

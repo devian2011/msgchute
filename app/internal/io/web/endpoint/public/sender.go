@@ -52,7 +52,7 @@ func NewSenderEndpoint(h senderHandler) *SenderEndpoint {
 func (e *SenderEndpoint) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var msgRequest SenderMessageRequest
 	if decodeErr := sonic.ConfigDefault.NewDecoder(r.Body).Decode(&msgRequest); decodeErr != nil {
-		response.WriteErrorResponse(w, http.StatusBadRequest, decodeErr)
+		response.WriteErrorResponse(w, r, http.StatusBadRequest, decodeErr)
 		return
 	}
 
@@ -72,11 +72,11 @@ func (e *SenderEndpoint) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		Schedule:   msgRequest.Schedule,
 	})
 	if sendErr != nil {
-		response.WriteErrorResponse(w, http.StatusInternalServerError, sendErr)
+		response.WriteErrorResponse(w, r, http.StatusInternalServerError, sendErr)
 		return
 	}
 
-	response.WriteSuccessResponse(w, http.StatusOK, &dto.AddMessageResponse{
+	response.WriteSuccessResponse(w, r, http.StatusOK, &dto.AddMessageResponse{
 		Message: msgResult,
 		Task:    taskResult,
 	})
@@ -111,7 +111,7 @@ func NewBatchSenderEndpoint(h batchSenderHandler) *BatchSenderEndpoint {
 func (e *BatchSenderEndpoint) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var request []*SenderMessageRequest
 	if decodeErr := sonic.ConfigDefault.NewDecoder(r.Body).Decode(&request); decodeErr != nil {
-		response.WriteErrorResponse(w, http.StatusBadRequest, decodeErr)
+		response.WriteErrorResponse(w, r, http.StatusBadRequest, decodeErr)
 		return
 	}
 
@@ -136,7 +136,7 @@ func (e *BatchSenderEndpoint) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 
 	result := e.h.Handle(messages)
 
-	response.WriteSuccessResponse(w, http.StatusOK, result)
+	response.WriteSuccessResponse(w, r, http.StatusOK, result)
 }
 
 // Retry
@@ -168,17 +168,17 @@ func NewMessageRetryEndpoint(h messageRetryHandler) *MessageRetryEndpoint {
 func (e *MessageRetryEndpoint) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var request *dto.MessageRetryRequest
 	if decodeErr := sonic.ConfigDefault.NewDecoder(r.Body).Decode(&request); decodeErr != nil {
-		response.WriteErrorResponse(w, http.StatusBadRequest, decodeErr)
+		response.WriteErrorResponse(w, r, http.StatusBadRequest, decodeErr)
 		return
 	}
 
 	m, t, err := e.h.Handle(request)
 	if err != nil {
-		response.WriteErrorResponse(w, http.StatusInternalServerError, err)
+		response.WriteErrorResponse(w, r, http.StatusInternalServerError, err)
 		return
 	}
 
-	response.WriteSuccessResponse(w, http.StatusOK, dto.AddMessageResponse{
+	response.WriteSuccessResponse(w, r, http.StatusOK, dto.AddMessageResponse{
 		Message: m,
 		Task:    t,
 	})
