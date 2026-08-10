@@ -533,7 +533,7 @@ func TestMessageRepository_GetRecipients(t *testing.T) {
 
 	t.Run("success with search substring", func(t *testing.T) {
 		search := "example"
-		expectedSQL := "SELECT DISTINCT jsonb_array_elements_text(recipients) AS recipient FROM messages WHERE jsonb_array_elements_text(recipients) ILIKE $1"
+		expectedSQL := "SELECT DISTINCT r.recipient FROM messages, LATERAL jsonb_array_elements_text(recipients) AS r(recipient) WHERE r.recipient ILIKE $1"
 		rows := sqlmock.NewRows([]string{"recipient"}).
 			AddRow("user@example.com").
 			AddRow("admin@example.org")
@@ -549,7 +549,7 @@ func TestMessageRepository_GetRecipients(t *testing.T) {
 	})
 
 	t.Run("success with empty search - returns all", func(t *testing.T) {
-		expectedSQL := "SELECT DISTINCT jsonb_array_elements_text(recipients) AS recipient FROM messages"
+		expectedSQL := "SELECT DISTINCT r.recipient FROM messages, LATERAL jsonb_array_elements_text(recipients) AS r(recipient)"
 		rows := sqlmock.NewRows([]string{"recipient"}).
 			AddRow("alice@mail.com").
 			AddRow("bob@mail.com").
@@ -565,7 +565,7 @@ func TestMessageRepository_GetRecipients(t *testing.T) {
 
 	t.Run("no matching recipients", func(t *testing.T) {
 		search := "nonexistent"
-		expectedSQL := "SELECT DISTINCT jsonb_array_elements_text(recipients) AS recipient FROM messages WHERE jsonb_array_elements_text(recipients) ILIKE $1"
+		expectedSQL := "SELECT DISTINCT r.recipient FROM messages, LATERAL jsonb_array_elements_text(recipients) AS r(recipient) WHERE r.recipient ILIKE $1"
 		mock.ExpectQuery(expectedSQL).
 			WithArgs("%" + search + "%").
 			WillReturnRows(sqlmock.NewRows([]string{"recipient"}))
@@ -578,7 +578,7 @@ func TestMessageRepository_GetRecipients(t *testing.T) {
 
 	t.Run("db error", func(t *testing.T) {
 		search := "test"
-		expectedSQL := "SELECT DISTINCT jsonb_array_elements_text(recipients) AS recipient FROM messages WHERE jsonb_array_elements_text(recipients) ILIKE $1"
+		expectedSQL := "SELECT DISTINCT r.recipient FROM messages, LATERAL jsonb_array_elements_text(recipients) AS r(recipient) WHERE r.recipient ILIKE $1"
 		mock.ExpectQuery(expectedSQL).
 			WithArgs("%" + search + "%").
 			WillReturnError(fmt.Errorf("connection lost"))
@@ -591,8 +591,7 @@ func TestMessageRepository_GetRecipients(t *testing.T) {
 	})
 
 	t.Run("empty rows returns empty slice", func(t *testing.T) {
-		// Проверяем, что при отсутствии записей возвращается пустой срез, а не nil
-		expectedSQL := "SELECT DISTINCT jsonb_array_elements_text(recipients) AS recipient FROM messages"
+		expectedSQL := "SELECT DISTINCT r.recipient FROM messages, LATERAL jsonb_array_elements_text(recipients) AS r(recipient)"
 		mock.ExpectQuery(expectedSQL).
 			WillReturnRows(sqlmock.NewRows([]string{"recipient"}))
 
