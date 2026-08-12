@@ -66,7 +66,8 @@ func Bootstrap(ctx context.Context, cfgFilePath string) (*registry.AppRegistry, 
 	workerStore := sender.NewWorkerStore(ctx, db, taskResultRepo, taskRepo, msgRepo)
 	workerManager := retrier.NewManager(
 		ctx, workerStore, &sender.Logger{}, retrier.NewBackOffStrategy(),
-		cfg.Providers.MaxBufferSize, cfg.Providers.FetchTaskTimeout, eventBus)
+		cfg.Providers.MaxBufferSize, cfg.Providers.FetchTaskTimeout, cfg.Providers.FetchTaskTimeoutMax,
+		eventBus)
 
 	// Message finder
 	msgFinder := message.NewFinder(db, msgRepo, taskRepo, taskResultRepo)

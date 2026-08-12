@@ -21,6 +21,7 @@ db:
 providers:
   maxBufferSize: 1000
   fetchTaskTimeout: 2s
+  fetchTaskTimeoutMax: 60s
   pluginMap:
     telegram: ./plugins/dist/providers/tg
     smtp: ./plugins/dist/providers/smtp

@@ -3,10 +3,11 @@ package sender
 import "time"
 
 type Config struct {
-	MaxBufferSize    int                        `yaml:"maxBufferSize"`
-	FetchTaskTimeout time.Duration              `yaml:"fetchTaskTimeout"`
-	PluginMap        map[string]string          `yaml:"pluginMap"`
-	Providers        map[string]*ProviderConfig `yaml:"providers"`
+	MaxBufferSize       int                        `yaml:"maxBufferSize"`
+	FetchTaskTimeout    time.Duration              `yaml:"fetchTaskTimeout"`
+	FetchTaskTimeoutMax time.Duration              `yaml:"fetchTaskTimeoutMax"`
+	PluginMap           map[string]string          `yaml:"pluginMap"`
+	Providers           map[string]*ProviderConfig `yaml:"providers"`
 }
 
 type ProviderConfig struct {

@@ -5,11 +5,12 @@ go 1.25.10
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/Masterminds/squirrel v1.5.4
+	github.com/ValerySidorin/shclog v0.0.1
 	github.com/amacneil/dbmate/v2 v2.34.1
 	github.com/bytedance/sonic v1.15.2
 	github.com/devian2011/msgchute/pkg/shared/auth v0.0.0-20260810114130-cd023e52c314
 	github.com/devian2011/msgchute/pkg/shared/provider v0.0.0-20260810114130-cd023e52c314
-	github.com/devian2011/retrier v1.1.0
+	github.com/devian2011/retrier v1.2.0
 	github.com/flosch/pongo2/v7 v7.0.0-alpha.1
 	github.com/go-chi/chi/v5 v5.3.1
 	github.com/go-chi/cors v1.2.2
@@ -17,7 +18,6 @@ require (
 	github.com/go-playground/form v3.1.4+incompatible
 	github.com/google/uuid v1.6.0
 	github.com/gookit/config/v2 v2.2.8
-	github.com/gorilla/mux v1.8.1
 	github.com/hashicorp/go-plugin v1.8.0
 	github.com/jackc/pgx/v5 v5.10.0
 	github.com/jmoiron/sqlx v1.4.0
@@ -31,12 +31,10 @@ require (
 require (
 	dario.cat/mergo v1.0.2 // indirect
 	github.com/KyleBanks/depth v1.2.1 // indirect
-	github.com/ValerySidorin/shclog v0.0.1 // indirect
 	github.com/bytedance/gopkg v0.1.3 // indirect
 	github.com/bytedance/sonic/loader v0.5.1 // indirect
 	github.com/cloudwego/base64x v0.1.6 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
-	github.com/evanphx/go-hclog-slog v0.0.0-20260701154556-7265b01e75d3 // indirect
 	github.com/fatih/color v1.17.0 // indirect
 	github.com/go-openapi/jsonpointer v1.0.0 // indirect
 	github.com/go-openapi/jsonreference v1.0.0 // indirect
