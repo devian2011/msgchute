@@ -274,6 +274,9 @@
                         <span
                             class="small text-secondary fw-semibold text-uppercase d-block">Task Schedule Windows:</span>
                         <div class="font-monospace text-muted" style="font-size: 0.75rem;">
+                          <div><strong>Lock Until:</strong>
+                            {{ fullTask.task.lockUntil ? fullTask.task.lockUntil.toLocaleString() : 'N/A' }}
+                          </div>
                           <div><strong>Created At:</strong>
                             {{ fullTask.task.createdAt ? fullTask.task.createdAt.toLocaleString() : 'N/A' }}
                           </div>

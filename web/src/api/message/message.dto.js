@@ -24,6 +24,7 @@ export class TaskDto {
         this.backOffParams = data.backoff_params || {};
         this.deadline = data.deadline ? new Date(data.deadline) : null;
         this.isProcessed = data.is_processed ?? false;
+        this.lockUntil = data.lock_until ? new Date(data.lock_until) : null;
         this.createdAt = data.created_at ? new Date(data.created_at) : null;
         this.lastRun = data.last_run ? new Date(data.last_run) : null;
         this.nextRun = data.next_run ? new Date(data.next_run) : null;
