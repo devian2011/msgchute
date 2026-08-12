@@ -57,6 +57,7 @@ func (s *Queue) Add(message *dto.Message) (*dto.Message, *dto.Task, error) {
 		Deadline:      message.Deadline,
 		IsProcessed:   false,
 
+		LockUntil: time.Time{},
 		CreatedAt: now,
 		LastRun:   time.Time{},
 		NextRun:   now,
@@ -157,6 +158,7 @@ func (s *Queue) Retry(mrr *dto.MessageRetryRequest) (*dto.Message, *dto.Task, er
 			Deadline:      mrr.Deadline,
 			IsProcessed:   false,
 
+			LockUntil: time.Time{},
 			CreatedAt: now,
 			LastRun:   time.Time{},
 			NextRun:   nextRun,

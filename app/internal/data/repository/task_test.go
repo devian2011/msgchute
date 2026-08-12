@@ -31,6 +31,7 @@ func newTestTask() *dto.Task {
 		BackOffParams: dto.BackOffParams{retrier.BaseDelayKey: "5s"},
 		Deadline:      now.Add(time.Hour),
 		IsProcessed:   false,
+		LockUntil:     time.Time{}, // zero time = NULL
 		CreatedAt:     now,
 		LastRun:       now,
 		NextRun:       now.Add(5 * time.Second),
@@ -45,7 +46,8 @@ func addTaskRow(rows *sqlmock.Rows, task *dto.Task) *sqlmock.Rows {
 	}
 	return rows.AddRow(
 		task.ID, task.MessageID, task.Worker, string(task.Status), task.Retries, task.MaxRetries,
-		task.BackOffCode, paramsJSON, task.Deadline, task.IsProcessed, task.CreatedAt, task.LastRun, task.NextRun,
+		task.BackOffCode, paramsJSON, task.Deadline, task.IsProcessed,
+		task.LockUntil, task.CreatedAt, task.LastRun, task.NextRun,
 	)
 }
 
@@ -58,7 +60,7 @@ func TestTaskRepository_GetByID(t *testing.T) {
 	ctx := context.Background()
 	task := newTestTask()
 
-	expectedSQL := "SELECT id, message_id, worker, status, retries, max_retries, backoff_code, backoff_params, deadline, is_processed, created_at, last_run, next_run FROM tasks WHERE id = $1 FOR UPDATE"
+	expectedSQL := "SELECT id, message_id, worker, status, retries, max_retries, backoff_code, backoff_params, deadline, is_processed, lock_until, created_at, last_run, next_run FROM tasks WHERE id = $1 FOR UPDATE SKIP LOCKED"
 
 	t.Run("found", func(t *testing.T) {
 		rows := addTaskRow(sqlmock.NewRows(taskColumns), task)
@@ -71,6 +73,7 @@ func TestTaskRepository_GetByID(t *testing.T) {
 		require.NotNil(t, result)
 		assert.Equal(t, task.ID, result.ID)
 		assert.Equal(t, task.IsProcessed, result.IsProcessed)
+		assert.Equal(t, task.LockUntil, result.LockUntil)
 	})
 
 	t.Run("not found", func(t *testing.T) {
@@ -95,7 +98,7 @@ func TestTaskRepository_GetByMessageID(t *testing.T) {
 	ctx := context.Background()
 	task := newTestTask()
 
-	expectedSQL := "SELECT id, message_id, worker, status, retries, max_retries, backoff_code, backoff_params, deadline, is_processed, created_at, last_run, next_run FROM tasks WHERE message_id = $1 ORDER BY created_at ASC FOR UPDATE"
+	expectedSQL := "SELECT id, message_id, worker, status, retries, max_retries, backoff_code, backoff_params, deadline, is_processed, lock_until, created_at, last_run, next_run FROM tasks WHERE message_id = $1 ORDER BY created_at ASC FOR UPDATE SKIP LOCKED"
 
 	t.Run("found multiple", func(t *testing.T) {
 		second := newTestTask()
@@ -138,14 +141,14 @@ func TestTaskRepository_Create(t *testing.T) {
 	ctx := context.Background()
 	task := newTestTask()
 
-	expectedSQL := "INSERT INTO tasks (id,message_id,worker,status,retries,max_retries,backoff_code,backoff_params,deadline,is_processed,last_run,next_run) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)"
+	expectedSQL := "INSERT INTO tasks (id,message_id,worker,status,retries,max_retries,backoff_code,backoff_params,deadline,is_processed,lock_until,last_run,next_run) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)"
 
 	t.Run("success", func(t *testing.T) {
 		mock.ExpectExec(expectedSQL).
 			WithArgs(
 				task.ID, task.MessageID, task.Worker, task.Status, task.Retries,
 				task.MaxRetries, task.BackOffCode, task.BackOffParams,
-				task.Deadline, task.IsProcessed, task.LastRun, task.NextRun,
+				task.Deadline, task.IsProcessed, task.LockUntil, task.LastRun, task.NextRun,
 			).
 			WillReturnResult(sqlmock.NewResult(1, 1))
 
@@ -153,6 +156,7 @@ func TestTaskRepository_Create(t *testing.T) {
 		assert.NoError(t, err)
 		require.NotNil(t, created)
 		assert.Equal(t, task.ID, created.ID)
+		assert.Equal(t, task.LockUntil, created.LockUntil)
 	})
 
 	t.Run("zero times are converted to NULL", func(t *testing.T) {
@@ -165,13 +169,14 @@ func TestTaskRepository_Create(t *testing.T) {
 			BackOffCode:   "exponential",
 			BackOffParams: dto.BackOffParams{},
 			IsProcessed:   false,
+			LockUntil:     time.Time{},
 		}
 
 		mock.ExpectExec(expectedSQL).
 			WithArgs(
 				empty.ID, empty.MessageID, empty.Worker, empty.Status, empty.Retries,
 				empty.MaxRetries, empty.BackOffCode, empty.BackOffParams,
-				empty.Deadline, empty.IsProcessed, empty.LastRun, empty.NextRun,
+				empty.Deadline, empty.IsProcessed, empty.LockUntil, empty.LastRun, empty.NextRun,
 			).
 			WillReturnResult(sqlmock.NewResult(1, 1))
 
@@ -193,16 +198,16 @@ func TestTaskRepository_Update(t *testing.T) {
 	task := newTestTask()
 	task.Status = retrier.StatusFailure
 	task.Retries = 2
+	task.LockUntil = time.Now().Add(time.Minute)
 
-	// is_processed добавлено в SET
-	expectedSQL := "UPDATE tasks SET message_id = $1, worker = $2, status = $3, retries = $4, max_retries = $5, backoff_code = $6, backoff_params = $7, deadline = $8, is_processed = $9, last_run = $10, next_run = $11 WHERE id = $12"
+	expectedSQL := "UPDATE tasks SET message_id = $1, worker = $2, status = $3, retries = $4, max_retries = $5, backoff_code = $6, backoff_params = $7, deadline = $8, is_processed = $9, lock_until = $10, last_run = $11, next_run = $12 WHERE id = $13"
 
 	t.Run("success", func(t *testing.T) {
 		mock.ExpectExec(expectedSQL).
 			WithArgs(
 				task.MessageID, task.Worker, task.Status, task.Retries, task.MaxRetries,
 				task.BackOffCode, task.BackOffParams, task.Deadline,
-				task.IsProcessed, task.LastRun, task.NextRun,
+				task.IsProcessed, task.LockUntil, task.LastRun, task.NextRun,
 				task.ID,
 			).
 			WillReturnResult(sqlmock.NewResult(0, 1))
@@ -213,6 +218,7 @@ func TestTaskRepository_Update(t *testing.T) {
 		assert.Equal(t, task.ID, updated.ID)
 		assert.Equal(t, retrier.StatusFailure, updated.Status)
 		assert.Equal(t, 2, updated.Retries)
+		assert.Equal(t, task.LockUntil, updated.LockUntil)
 	})
 
 	t.Run("not found", func(t *testing.T) {
@@ -220,7 +226,7 @@ func TestTaskRepository_Update(t *testing.T) {
 			WithArgs(
 				task.MessageID, task.Worker, task.Status, task.Retries, task.MaxRetries,
 				task.BackOffCode, task.BackOffParams, task.Deadline,
-				task.IsProcessed, task.LastRun, task.NextRun,
+				task.IsProcessed, task.LockUntil, task.LastRun, task.NextRun,
 				task.ID,
 			).
 			WillReturnResult(sqlmock.NewResult(0, 0))
@@ -236,12 +242,13 @@ func TestTaskRepository_Update(t *testing.T) {
 		zeroTask.Deadline = time.Time{}
 		zeroTask.LastRun = time.Time{}
 		zeroTask.NextRun = time.Time{}
+		zeroTask.LockUntil = time.Time{}
 
 		mock.ExpectExec(expectedSQL).
 			WithArgs(
 				zeroTask.MessageID, zeroTask.Worker, zeroTask.Status, zeroTask.Retries, zeroTask.MaxRetries,
 				zeroTask.BackOffCode, zeroTask.BackOffParams, zeroTask.Deadline,
-				zeroTask.IsProcessed, zeroTask.LastRun, zeroTask.NextRun,
+				zeroTask.IsProcessed, zeroTask.LockUntil, zeroTask.LastRun, zeroTask.NextRun,
 				zeroTask.ID,
 			).
 			WillReturnResult(sqlmock.NewResult(0, 1))
@@ -250,6 +257,7 @@ func TestTaskRepository_Update(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, updated)
 		assert.True(t, updated.Deadline.IsZero())
+		assert.True(t, updated.LockUntil.IsZero())
 	})
 
 	assert.NoError(t, mock.ExpectationsWereMet())
@@ -326,7 +334,7 @@ func TestTaskRepository_List(t *testing.T) {
 			SortOrder:     "DESC",
 		}
 
-		expectedSQL := "SELECT id, message_id, worker, status, retries, max_retries, backoff_code, backoff_params, deadline, is_processed, created_at, last_run, next_run FROM tasks WHERE message_id IN ($1) AND status IN ($2,$3) AND worker = $4 AND next_run <= $5 AND next_run >= $6 ORDER BY created_at DESC LIMIT 10 OFFSET 5 FOR UPDATE"
+		expectedSQL := "SELECT id, message_id, worker, status, retries, max_retries, backoff_code, backoff_params, deadline, is_processed, lock_until, created_at, last_run, next_run FROM tasks WHERE message_id IN ($1) AND status IN ($2,$3) AND worker = $4 AND next_run <= $5 AND next_run >= $6 ORDER BY created_at DESC LIMIT 10 OFFSET 5 FOR UPDATE SKIP LOCKED"
 
 		rows := addTaskRow(sqlmock.NewRows(taskColumns), task)
 		mock.ExpectQuery(expectedSQL).
@@ -340,11 +348,12 @@ func TestTaskRepository_List(t *testing.T) {
 		assert.NotEmpty(t, tasksForMsg)
 		assert.Equal(t, task.ID, tasksForMsg[0].ID)
 		assert.Equal(t, task.IsProcessed, tasksForMsg[0].IsProcessed)
+		assert.Equal(t, task.LockUntil, tasksForMsg[0].LockUntil)
 	})
 
 	t.Run("default ordering and no filters", func(t *testing.T) {
 		filter := dto.TaskFilter{}
-		expectedSQL := "SELECT id, message_id, worker, status, retries, max_retries, backoff_code, backoff_params, deadline, is_processed, created_at, last_run, next_run FROM tasks ORDER BY next_run ASC NULLS LAST, created_at ASC FOR UPDATE"
+		expectedSQL := "SELECT id, message_id, worker, status, retries, max_retries, backoff_code, backoff_params, deadline, is_processed, lock_until, created_at, last_run, next_run FROM tasks ORDER BY next_run ASC NULLS LAST, created_at ASC FOR UPDATE SKIP LOCKED"
 
 		mock.ExpectQuery(expectedSQL).
 			WillReturnRows(sqlmock.NewRows(taskColumns))
@@ -374,24 +383,25 @@ func TestTaskRepository_Lock(t *testing.T) {
 	repo := NewTaskRepository(db)
 	ctx := context.Background()
 	ids := []uuid.UUID{uuid.New(), uuid.New()}
+	until := time.Now().Add(time.Minute)
 
-	expectedSQL := "UPDATE tasks SET is_processed = $1 WHERE id IN ($2,$3)"
+	expectedSQL := "UPDATE tasks SET is_processed = $1, lock_until = $2 WHERE id IN ($3,$4)"
 
 	t.Run("success", func(t *testing.T) {
 		mock.ExpectExec(expectedSQL).
-			WithArgs(true, ids[0], ids[1]).
+			WithArgs(true, until, ids[0], ids[1]).
 			WillReturnResult(sqlmock.NewResult(0, 2))
 
-		err := repo.Lock(ctx, ids)
+		err := repo.Lock(ctx, ids, until)
 		assert.NoError(t, err)
 	})
 
 	t.Run("error", func(t *testing.T) {
 		mock.ExpectExec(expectedSQL).
-			WithArgs(true, ids[0], ids[1]).
+			WithArgs(true, until, ids[0], ids[1]).
 			WillReturnError(errors.New("lock error"))
 
-		err := repo.Lock(ctx, ids)
+		err := repo.Lock(ctx, ids, until)
 		assert.Error(t, err)
 	})
 
@@ -407,11 +417,11 @@ func TestTaskRepository_Unlock(t *testing.T) {
 	ctx := context.Background()
 	ids := []uuid.UUID{uuid.New(), uuid.New()}
 
-	expectedSQL := "UPDATE tasks SET is_processed = $1 WHERE id IN ($2,$3)"
+	expectedSQL := "UPDATE tasks SET is_processed = $1, lock_until = $2 WHERE id IN ($3,$4)"
 
 	t.Run("success", func(t *testing.T) {
 		mock.ExpectExec(expectedSQL).
-			WithArgs(false, ids[0], ids[1]).
+			WithArgs(false, time.Time{}, ids[0], ids[1]).
 			WillReturnResult(sqlmock.NewResult(0, 2))
 
 		err := repo.Unlock(ctx, ids)
@@ -420,10 +430,41 @@ func TestTaskRepository_Unlock(t *testing.T) {
 
 	t.Run("error", func(t *testing.T) {
 		mock.ExpectExec(expectedSQL).
-			WithArgs(false, ids[0], ids[1]).
+			WithArgs(false, time.Time{}, ids[0], ids[1]).
 			WillReturnError(errors.New("unlock error"))
 
 		err := repo.Unlock(ctx, ids)
+		assert.Error(t, err)
+	})
+
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+// TestTaskRepository_ReleaseHungTasks tests the ReleaseHungTasks method.
+func TestTaskRepository_ReleaseHungTasks(t *testing.T) {
+	db, mock := setupMockDB(t)
+	defer db.Close()
+
+	repo := NewTaskRepository(db)
+	ctx := context.Background()
+
+	expectedSQL := "UPDATE tasks SET is_processed = $1, lock_until = $2 WHERE lock_until < $3 AND is_processed = $4"
+
+	t.Run("success", func(t *testing.T) {
+		mock.ExpectExec(expectedSQL).
+			WithArgs(false, time.Time{}, sqlmock.AnyArg(), true).
+			WillReturnResult(sqlmock.NewResult(0, 3))
+
+		err := repo.ReleaseHungTasks(ctx)
+		assert.NoError(t, err)
+	})
+
+	t.Run("error", func(t *testing.T) {
+		mock.ExpectExec(expectedSQL).
+			WithArgs(false, time.Time{}, sqlmock.AnyArg(), true).
+			WillReturnError(errors.New("release error"))
+
+		err := repo.ReleaseHungTasks(ctx)
 		assert.Error(t, err)
 	})
 
@@ -445,7 +486,7 @@ func TestTaskRepository_GetByMessageIDs(t *testing.T) {
 	task2 := newTestTask()
 	task2.MessageID = msgID2
 
-	expectedSQL := "SELECT id, message_id, worker, status, retries, max_retries, backoff_code, backoff_params, deadline, is_processed, created_at, last_run, next_run FROM tasks WHERE message_id IN ($1,$2) ORDER BY next_run ASC NULLS LAST, created_at ASC FOR UPDATE"
+	expectedSQL := "SELECT id, message_id, worker, status, retries, max_retries, backoff_code, backoff_params, deadline, is_processed, lock_until, created_at, last_run, next_run FROM tasks WHERE message_id IN ($1,$2) ORDER BY next_run ASC NULLS LAST, created_at ASC FOR UPDATE SKIP LOCKED"
 
 	t.Run("success", func(t *testing.T) {
 		rows := addTaskRow(sqlmock.NewRows(taskColumns), task1)
@@ -498,12 +539,12 @@ func TestTaskRepository_WithTx(t *testing.T) {
 
 	task := newTestTask()
 
-	insertSQL := "INSERT INTO tasks (id,message_id,worker,status,retries,max_retries,backoff_code,backoff_params,deadline,is_processed,last_run,next_run) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)"
+	insertSQL := "INSERT INTO tasks (id,message_id,worker,status,retries,max_retries,backoff_code,backoff_params,deadline,is_processed,lock_until,last_run,next_run) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)"
 	mock.ExpectExec(insertSQL).
 		WithArgs(
 			task.ID, task.MessageID, task.Worker, task.Status, task.Retries,
 			task.MaxRetries, task.BackOffCode, task.BackOffParams,
-			task.Deadline, task.IsProcessed, task.LastRun, task.NextRun,
+			task.Deadline, task.IsProcessed, task.LockUntil, task.LastRun, task.NextRun,
 		).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
@@ -511,12 +552,13 @@ func TestTaskRepository_WithTx(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, created)
 
-	selectSQL := "SELECT id, message_id, worker, status, retries, max_retries, backoff_code, backoff_params, deadline, is_processed, created_at, last_run, next_run FROM tasks WHERE id = $1 FOR UPDATE"
+	selectSQL := "SELECT id, message_id, worker, status, retries, max_retries, backoff_code, backoff_params, deadline, is_processed, lock_until, created_at, last_run, next_run FROM tasks WHERE id = $1 FOR UPDATE SKIP LOCKED"
 	mock.ExpectQuery(selectSQL).
 		WithArgs(task.ID).
 		WillReturnRows(sqlmock.NewRows(taskColumns).AddRow(
 			task.ID, task.MessageID, task.Worker, task.Status, task.Retries, task.MaxRetries,
-			task.BackOffCode, []byte(`{"interval":"5s"}`), task.Deadline, task.IsProcessed, task.CreatedAt, task.LastRun, task.NextRun,
+			task.BackOffCode, []byte(`{"interval":"5s"}`), task.Deadline, task.IsProcessed,
+			task.LockUntil, task.CreatedAt, task.LastRun, task.NextRun,
 		))
 
 	fetched, err := repo.GetByID(ctxWithTx, task.ID)

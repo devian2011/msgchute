@@ -9,7 +9,7 @@ require (
 	github.com/bytedance/sonic v1.15.2
 	github.com/devian2011/msgchute/pkg/shared/auth v0.0.0-20260810114130-cd023e52c314
 	github.com/devian2011/msgchute/pkg/shared/provider v0.0.0-20260810114130-cd023e52c314
-	github.com/devian2011/retrier v1.0.1
+	github.com/devian2011/retrier v1.1.0
 	github.com/flosch/pongo2/v7 v7.0.0-alpha.1
 	github.com/go-chi/chi/v5 v5.3.1
 	github.com/go-chi/cors v1.2.2

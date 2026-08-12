@@ -2,6 +2,7 @@ package sender
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/mock"
@@ -45,8 +46,13 @@ func (m *MockTaskRepo) Update(ctx context.Context, task *dto.Task) (*dto.Task, e
 	return args.Get(0).(*dto.Task), args.Error(1)
 }
 
-func (m *MockTaskRepo) Lock(ctx context.Context, ids []uuid.UUID) error {
+func (m *MockTaskRepo) Lock(ctx context.Context, ids []uuid.UUID, until time.Time) error {
 	args := m.Called(ctx, ids)
+	return args.Error(0)
+}
+
+func (m *MockTaskRepo) ReleaseHungTasks(ctx context.Context) error {
+	args := m.Called(ctx)
 	return args.Error(0)
 }
 

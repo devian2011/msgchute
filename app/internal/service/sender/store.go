@@ -43,10 +43,15 @@ func (s *WorkerStore) GetTasks() ([]retrier.Task, error) {
 	result := make([]retrier.Task, 0)
 
 	getErr := storage.InTransaction(context.TODO(), s.db, func(ctx context.Context) error {
+		// TODO: May be release in other goroutine
+		if releasedErr := s.taskRepo.ReleaseHungTasks(ctx); releasedErr != nil {
+			slog.Error("failed to release hung tasks", "error", releasedErr)
+		}
 		storeTasks, err := s.taskRepo.List(ctx, dto.TaskFilter{
 			Statuses:      []retrier.TaskStatus{retrier.StatusPending},
 			NextRunBefore: &now,
 			IsProcessed:   new(bool),
+			Limit:         100, // TODO: Move to config
 		})
 		if err != nil {
 			return err
@@ -104,7 +109,8 @@ func (s *WorkerStore) GetTasks() ([]retrier.Task, error) {
 			}
 		}
 
-		return s.taskRepo.Lock(ctx, taskIDs)
+		pkgLockDuration := int64(len(taskIDs)) * 5 * int64(time.Minute)
+		return s.taskRepo.Lock(ctx, taskIDs, now.Add(time.Duration(pkgLockDuration)))
 	})
 
 	if getErr != nil {

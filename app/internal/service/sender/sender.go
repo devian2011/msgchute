@@ -3,6 +3,7 @@ package sender
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/bytedance/sonic"
 	"github.com/devian2011/retrier"
@@ -59,10 +60,19 @@ func (s *Sender) Init() error {
 			return bPluginErr
 		}
 
-		w := retrier.NewWorker(s.ctx, s.sendFunc)
-		w.SetMinAndMaxWorkers(
+		wConfig, wConfigErr := retrier.NewWorkerCfg(
 			int32(pCfg.RetrierSettings.Workers.Min),
-			int32(pCfg.RetrierSettings.Workers.Max))
+			int32(pCfg.RetrierSettings.Workers.Max),
+			5*time.Second)
+
+		if wConfigErr != nil {
+			return fmt.Errorf("worker config error: %w", wConfigErr)
+		}
+
+		w, wInitErr := retrier.NewWorker(s.ctx, wConfig, s.sendFunc)
+		if wInitErr != nil {
+			return fmt.Errorf("worker init error: %w", wInitErr)
+		}
 
 		regErr := s.wm.RegisterWorker(
 			pName,

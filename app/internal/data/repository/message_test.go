@@ -89,7 +89,7 @@ func TestMessageRepository_Find(t *testing.T) {
 			WithArgs("billing", "invoice_remind", "email", dto.MessageStatusSucceeded, `["user@example.com"]`).
 			WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(1))
 
-		expectedSelectSQL := "SELECT id, sender_id, transport, template_code AS code, recipients, params, retry, schedule, deadline, subject, body, status, meta FROM messages WHERE sender_id IN ($1) AND template_code IN ($2) AND transport IN ($3) AND status IN ($4) AND recipients @> $5 ORDER BY schedule DESC LIMIT 10 FOR UPDATE"
+		expectedSelectSQL := "SELECT id, sender_id, transport, template_code AS code, recipients, params, retry, schedule, deadline, subject, body, status, meta FROM messages WHERE sender_id IN ($1) AND template_code IN ($2) AND transport IN ($3) AND status IN ($4) AND recipients @> $5 ORDER BY schedule DESC LIMIT 10 FOR UPDATE SKIP LOCKED"
 		rows := sqlmock.NewRows([]string{
 			"id", "sender_id", "transport", "code",
 			"recipients", "params", "retry", "schedule",
@@ -122,7 +122,7 @@ func TestMessageRepository_Find(t *testing.T) {
 		mock.ExpectQuery("SELECT COUNT(*) FROM messages").
 			WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(0))
 
-		expectedSelectSQL := "SELECT id, sender_id, transport, template_code AS code, recipients, params, retry, schedule, deadline, subject, body, status, meta FROM messages ORDER BY schedule DESC, id DESC LIMIT 5 FOR UPDATE"
+		expectedSelectSQL := "SELECT id, sender_id, transport, template_code AS code, recipients, params, retry, schedule, deadline, subject, body, status, meta FROM messages ORDER BY schedule DESC, id DESC LIMIT 5 FOR UPDATE SKIP LOCKED"
 		mock.ExpectQuery(expectedSelectSQL).
 			WillReturnRows(sqlmock.NewRows([]string{
 				"id", "sender_id", "transport", "code",
@@ -185,7 +185,7 @@ func TestGetByID_Success(t *testing.T) {
 	ctx := context.Background()
 	id := uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")
 
-	expectedQuery := `SELECT id, sender_id, transport, template_code AS code, recipients, params, retry, schedule, deadline, subject, body, status, meta FROM messages WHERE id = $1 FOR UPDATE`
+	expectedQuery := `SELECT id, sender_id, transport, template_code AS code, recipients, params, retry, schedule, deadline, subject, body, status, meta FROM messages WHERE id = $1 FOR UPDATE SKIP LOCKED`
 
 	deadline := time.Date(2025, 1, 2, 0, 0, 0, 0, time.UTC)
 	schedule := time.Date(2025, 1, 1, 12, 0, 0, 0, time.UTC)
@@ -233,7 +233,7 @@ func TestGetByID_NotFound(t *testing.T) {
 	ctx := context.Background()
 	id := uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")
 
-	expectedSQL := "SELECT id, sender_id, transport, template_code AS code, recipients, params, retry, schedule, deadline, subject, body, status, meta FROM messages WHERE id = $1 FOR UPDATE"
+	expectedSQL := "SELECT id, sender_id, transport, template_code AS code, recipients, params, retry, schedule, deadline, subject, body, status, meta FROM messages WHERE id = $1 FOR UPDATE SKIP LOCKED"
 	mock.ExpectQuery(expectedSQL).
 		WithArgs(id.String()).
 		WillReturnError(sql.ErrNoRows)

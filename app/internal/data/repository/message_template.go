@@ -57,7 +57,7 @@ func (r *MessageTemplateRepository) GetByCode(ctx context.Context, code string) 
 	query, args, err := r.builder.Select("code", "name", "description", "params", "subject", "body").
 		From(messageTemplatesTable).
 		Where(squirrel.Eq{"code": code}).
-		Suffix("FOR UPDATE").
+		Suffix("FOR UPDATE SKIP LOCKED").
 		ToSql()
 	if err != nil {
 		return nil, fmt.Errorf("build get by code query: %w", err)

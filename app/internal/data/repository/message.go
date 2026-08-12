@@ -79,7 +79,7 @@ func (r *MessageRepository) GetByID(ctx context.Context, ID uuid.UUID) (*dto.Mes
 	selectBuilder := r.builder.Select(messageColumns...).
 		From(messagesTable).
 		Where(squirrel.Eq{"id": ID}).
-		Suffix("FOR UPDATE")
+		Suffix("FOR UPDATE SKIP LOCKED")
 
 	query, args, err := selectBuilder.ToSql()
 	if err != nil {
@@ -186,7 +186,7 @@ func (r *MessageRepository) Find(ctx context.Context, filter *dto.MessageFilter)
 			orderClause = fmt.Sprintf("%s %s", field, order)
 		}
 	}
-	selectBuilder = selectBuilder.OrderBy(orderClause).Suffix("FOR UPDATE")
+	selectBuilder = selectBuilder.OrderBy(orderClause).Suffix("FOR UPDATE SKIP LOCKED")
 
 	query, args, err := selectBuilder.ToSql()
 	if err != nil {

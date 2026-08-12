@@ -47,7 +47,9 @@ type Task struct {
 	BackOffCode   string             `db:"backoff_code" json:"backoff_code"`
 	BackOffParams BackOffParams      `db:"backoff_params" json:"backoff_params"`
 	Deadline      time.Time          `db:"deadline" json:"deadline"`
-	IsProcessed   bool               `db:"is_processed" json:"is_processed"`
+
+	IsProcessed bool      `db:"is_processed" json:"is_processed"`
+	LockUntil   time.Time `db:"lock_until" json:"lock_until"`
 
 	CreatedAt time.Time `db:"created_at" json:"created_at"`
 	LastRun   time.Time `db:"last_run" json:"last_run"`

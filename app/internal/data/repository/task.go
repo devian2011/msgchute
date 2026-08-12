@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/Masterminds/squirrel"
 	"github.com/google/uuid"
@@ -41,20 +42,22 @@ func (r *TaskRepository) getDB(ctx context.Context) DBContext {
 	return r.db
 }
 
-// taskColumns lists all columns of the tasks table.
+// taskColumns lists all columns of the tasks table (including lock_until).
 var taskColumns = []string{
 	"id", "message_id", "worker", "status", "retries", "max_retries",
-	"backoff_code", "backoff_params", "deadline", "is_processed", "created_at", "last_run", "next_run",
+	"backoff_code", "backoff_params", "deadline", "is_processed",
+	"lock_until", "created_at", "last_run", "next_run",
 }
 
 // GetByID retrieves a task by its UUID.
-// Returns ErrTaskNotFound if no task exists with the given ID.
+// Returns nil, nil if no task exists with the given ID.
+// Uses FOR UPDATE SKIP LOCKED for safe concurrent processing.
 func (r *TaskRepository) GetByID(ctx context.Context, ID uuid.UUID) (*dto.Task, error) {
 	query, args, err := r.builder.
 		Select(taskColumns...).
 		From(taskTable).
 		Where(squirrel.Eq{"id": ID}).
-		Suffix("FOR UPDATE").
+		Suffix("FOR UPDATE SKIP LOCKED").
 		ToSql()
 	if err != nil {
 		return nil, fmt.Errorf("build query: %w", err)
@@ -80,7 +83,7 @@ func (r *TaskRepository) GetByMessageID(ctx context.Context, messageID uuid.UUID
 		From(taskTable).
 		Where(squirrel.Eq{"message_id": messageID}).
 		OrderBy("created_at ASC").
-		Suffix("FOR UPDATE").
+		Suffix("FOR UPDATE SKIP LOCKED").
 		ToSql()
 	if err != nil {
 		return nil, fmt.Errorf("build query: %w", err)
@@ -101,10 +104,11 @@ func (r *TaskRepository) Create(ctx context.Context, task *dto.Task) (*dto.Task,
 	query, args, err := r.builder.
 		Insert(taskTable).
 		Columns("id", "message_id", "worker", "status", "retries", "max_retries",
-			"backoff_code", "backoff_params", "deadline", "is_processed", "last_run", "next_run").
+			"backoff_code", "backoff_params", "deadline", "is_processed",
+			"lock_until", "last_run", "next_run").
 		Values(task.ID, task.MessageID, task.Worker, task.Status, task.Retries,
 			task.MaxRetries, task.BackOffCode, task.BackOffParams,
-			task.Deadline, task.IsProcessed, task.LastRun, task.NextRun).
+			task.Deadline, task.IsProcessed, task.LockUntil, task.LastRun, task.NextRun).
 		ToSql()
 	if err != nil {
 		return nil, fmt.Errorf("build insert: %w", err)
@@ -133,6 +137,7 @@ func (r *TaskRepository) Update(ctx context.Context, task *dto.Task) (*dto.Task,
 		Set("backoff_params", task.BackOffParams).
 		Set("deadline", task.Deadline).
 		Set("is_processed", task.IsProcessed).
+		Set("lock_until", task.LockUntil).
 		Set("last_run", task.LastRun).
 		Set("next_run", task.NextRun).
 		Where(squirrel.Eq{"id": task.ID}).
@@ -190,14 +195,37 @@ func (r *TaskRepository) GetByMessageIDs(ctx context.Context, messageIDs []uuid.
 	return r.List(ctx, dto.TaskFilter{MessageIDs: messageIDs})
 }
 
-// Lock sets is_processed = true for tasks with given IDs.
-func (r *TaskRepository) Lock(ctx context.Context, IDs []uuid.UUID) error {
+// ReleaseHungTasks finds tasks whose lock_until has passed (meaning they were locked
+// but not completed) and releases them by setting is_processed to false and clearing lock_until.
+func (r *TaskRepository) ReleaseHungTasks(ctx context.Context) error {
+	now := time.Now()
+	query, args, err := r.builder.Update(taskTable).
+		Set("is_processed", false).
+		Set("lock_until", time.Time{}). // NULL in PostgreSQL
+		Where(squirrel.Lt{"lock_until": now}).
+		Where(squirrel.Eq{"is_processed": true}).
+		ToSql()
+	if err != nil {
+		return fmt.Errorf("build release hung tasks query: %w", err)
+	}
+	db := r.getDB(ctx)
+	_, err = db.Exec(query, args...)
+	if err != nil {
+		return fmt.Errorf("release hung tasks: %w", err)
+	}
+	return nil
+}
+
+// Lock marks tasks as processed (is_processed = true) and sets lock_until to the given time.
+// This is used to acquire exclusive ownership of tasks for processing.
+func (r *TaskRepository) Lock(ctx context.Context, IDs []uuid.UUID, until time.Time) error {
 	if len(IDs) == 0 {
 		return nil
 	}
 	db := r.getDB(ctx)
 	query, args, err := r.builder.Update(taskTable).
 		Set("is_processed", true).
+		Set("lock_until", until).
 		Where(squirrel.Eq{"id": IDs}).
 		ToSql()
 	if err != nil {
@@ -210,7 +238,7 @@ func (r *TaskRepository) Lock(ctx context.Context, IDs []uuid.UUID) error {
 	return nil
 }
 
-// Unlock sets is_processed = false for tasks with given IDs.
+// Unlock releases locks by setting is_processed = false and clearing lock_until.
 func (r *TaskRepository) Unlock(ctx context.Context, IDs []uuid.UUID) error {
 	if len(IDs) == 0 {
 		return nil
@@ -218,6 +246,7 @@ func (r *TaskRepository) Unlock(ctx context.Context, IDs []uuid.UUID) error {
 	db := r.getDB(ctx)
 	query, args, err := r.builder.Update(taskTable).
 		Set("is_processed", false).
+		Set("lock_until", time.Time{}). // NULL
 		Where(squirrel.Eq{"id": IDs}).
 		ToSql()
 	if err != nil {
@@ -275,7 +304,7 @@ func (r *TaskRepository) List(ctx context.Context, filter dto.TaskFilter) (map[u
 		b = b.Offset(filter.Offset)
 	}
 
-	query, args, err := b.Suffix("FOR UPDATE").ToSql()
+	query, args, err := b.Suffix("FOR UPDATE SKIP LOCKED").ToSql()
 	if err != nil {
 		return nil, fmt.Errorf("build list query: %w", err)
 	}

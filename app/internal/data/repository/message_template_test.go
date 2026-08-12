@@ -49,7 +49,7 @@ func TestMessageTemplateRepository_GetByCode(t *testing.T) {
 	ctx := context.Background()
 	code := "welcome_email"
 
-	expectedSQL := "SELECT code, name, description, params, subject, body FROM message_templates WHERE code = $1 FOR UPDATE"
+	expectedSQL := "SELECT code, name, description, params, subject, body FROM message_templates WHERE code = $1 FOR UPDATE SKIP LOCKED"
 
 	t.Run("success", func(t *testing.T) {
 		rows := sqlmock.NewRows([]string{"code", "name", "description", "params", "subject", "body"}).

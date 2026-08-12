@@ -2,6 +2,7 @@ package sender
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -13,7 +14,8 @@ type taskRepo interface {
 	List(context.Context, dto.TaskFilter) (map[uuid.UUID][]dto.Task, error)
 	Create(context.Context, *dto.Task) (*dto.Task, error)
 	Update(context.Context, *dto.Task) (*dto.Task, error)
-	Lock(context.Context, []uuid.UUID) error
+	Lock(context.Context, []uuid.UUID, time.Time) error
+	ReleaseHungTasks(ctx context.Context) error
 }
 
 type taskResultRepo interface {

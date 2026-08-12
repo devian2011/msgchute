@@ -82,6 +82,9 @@ func TestWorkerStore_GetTasks_Success(t *testing.T) {
 		msgID2: {task2},
 	}
 
+	// Expect ReleaseHungTasks
+	taskRepo.On("ReleaseHungTasks", mock.Anything).Return(nil).Once()
+
 	taskRepo.On("List", mock.Anything, mock.MatchedBy(func(filter dto.TaskFilter) bool {
 		return len(filter.Statuses) == 1 &&
 			filter.Statuses[0] == retrier.StatusPending &&
@@ -136,6 +139,7 @@ func TestWorkerStore_GetTasks_EmptyList(t *testing.T) {
 	defer db.Close()
 
 	taskRepo := new(MockTaskRepo)
+	taskRepo.On("ReleaseHungTasks", mock.Anything).Return(nil).Once()
 	taskRepo.On("List", mock.Anything, mock.Anything).Return(map[uuid.UUID][]dto.Task{}, nil)
 
 	store := setupStore(context.Background(), db, taskRepo, new(MockTaskResultRepo), new(MockMessageRepo))
@@ -154,6 +158,7 @@ func TestWorkerStore_GetTasks_ListError(t *testing.T) {
 	defer db.Close()
 
 	taskRepo := new(MockTaskRepo)
+	taskRepo.On("ReleaseHungTasks", mock.Anything).Return(nil).Once()
 	taskRepo.On("List", mock.Anything, mock.Anything).Return(nil, assert.AnError)
 
 	store := setupStore(context.Background(), db, taskRepo, new(MockTaskResultRepo), new(MockMessageRepo))
@@ -180,6 +185,7 @@ func TestWorkerStore_GetTasks_GetByIDsError(t *testing.T) {
 	task := dto.Task{ID: uuid.New(), MessageID: msgID, Status: retrier.StatusPending}
 	taskMap := map[uuid.UUID][]dto.Task{msgID: {task}}
 
+	taskRepo.On("ReleaseHungTasks", mock.Anything).Return(nil).Once()
 	taskRepo.On("List", mock.Anything, mock.Anything).Return(taskMap, nil)
 	msgRepo.On("GetByIDs", mock.Anything, mock.Anything).Return(nil, assert.AnError)
 

@@ -36,6 +36,8 @@ github.com/devian2011/msgchute/pkg/shared/provider v0.0.0-20260810114130-cd023e5
 github.com/devian2011/msgchute/pkg/shared/provider v0.0.0-20260810114130-cd023e52c314/go.mod h1:D60UYpT9Jz42rOFS9mm0KRYNhXZ3zUTKhdFue13khew=
 github.com/devian2011/retrier v1.0.1 h1:ge0CeOsTKPWBYJkwCmYDni8IJB81BciRrHwllJ9WSw8=
 github.com/devian2011/retrier v1.0.1/go.mod h1:7IvcxVjAbF9RPvZuKV7SxNE9xxbRag6PF7qScj2sp4M=
+github.com/devian2011/retrier v1.1.0 h1:0SMfAERszHuA+1skwb8nfQjxcj41HZHtZzA1vAQGeuQ=
+github.com/devian2011/retrier v1.1.0/go.mod h1:7IvcxVjAbF9RPvZuKV7SxNE9xxbRag6PF7qScj2sp4M=
 github.com/evanphx/go-hclog-slog v0.0.0-20260701154556-7265b01e75d3 h1:HOGpjny3M2c1ksOvzno1K/iYt/jJWuObPBy5Jb7Qt2E=
 github.com/evanphx/go-hclog-slog v0.0.0-20260701154556-7265b01e75d3/go.mod h1:30+1dTR5EdDQGmcjkgOj4i6iVD3wnI0XymSOTPMlUeA=
 github.com/fatih/color v1.13.0 h1:8LOYc1KYPPmyKMuN8QV2DNRWNbLo6LZ0iLs8+mlH53w=
