@@ -159,6 +159,8 @@ definitions:
         type: boolean
       last_run:
         type: string
+      lock_until:
+        type: string
       max_retries:
         type: integer
       message_id:
@@ -355,7 +357,7 @@ paths:
             $ref: '#/definitions/github_com_devian2011_msgchute_pkg_http_response.Response'
       summary: Get message dictionaries
       tags:
-      - messages
+      - admin.dictionaries
   /api/admin/v1/dictionary/message-recipients:
     get:
       consumes:
@@ -384,7 +386,7 @@ paths:
             $ref: '#/definitions/github_com_devian2011_msgchute_pkg_http_response.Response'
       summary: Get recipients list
       tags:
-      - messages
+      - admin.messages
   /api/admin/v1/message:
     get:
       consumes:
@@ -469,7 +471,7 @@ paths:
             $ref: '#/definitions/github_com_devian2011_msgchute_pkg_http_response.Response'
       summary: List and filter messages
       tags:
-      - admin-messages
+      - admin.messages
   /api/admin/v1/message/{id}:
     get:
       consumes:
@@ -499,7 +501,7 @@ paths:
             $ref: '#/definitions/github_com_devian2011_msgchute_pkg_http_response.Response'
       summary: Get message by ID
       tags:
-      - admin-messages
+      - admin.messages
   /api/admin/v1/template:
     get:
       consumes:
@@ -553,7 +555,7 @@ paths:
             $ref: '#/definitions/github_com_devian2011_msgchute_pkg_http_response.Response'
       summary: List and filter templates
       tags:
-      - admin-templates
+      - admin.templates
     post:
       consumes:
       - application/json
@@ -583,7 +585,7 @@ paths:
             $ref: '#/definitions/github_com_devian2011_msgchute_pkg_http_response.Response'
       summary: Create a template
       tags:
-      - admin-templates
+      - admin.templates
   /api/admin/v1/template/{code}:
     put:
       consumes:
@@ -620,7 +622,7 @@ paths:
             $ref: '#/definitions/github_com_devian2011_msgchute_pkg_http_response.Response'
       summary: Update a template
       tags:
-      - admin-templates
+      - admin.templates
   /api/v1/batch/send:
     post:
       consumes:
@@ -655,7 +657,7 @@ paths:
             $ref: '#/definitions/github_com_devian2011_msgchute_pkg_http_response.Response'
       summary: Send multiple messages
       tags:
-      - messages
+      - public.messages
   /api/v1/message/retry:
     post:
       consumes:
@@ -686,7 +688,7 @@ paths:
             $ref: '#/definitions/github_com_devian2011_msgchute_pkg_http_response.Response'
       summary: Retry a message
       tags:
-      - messages
+      - public.messages
   /api/v1/preview:
     post:
       consumes:
@@ -717,7 +719,7 @@ paths:
             $ref: '#/definitions/github_com_devian2011_msgchute_pkg_http_response.Response'
       summary: Preview message
       tags:
-      - messages
+      - public.messages
   /api/v1/send:
     post:
       consumes:
@@ -748,7 +750,7 @@ paths:
             $ref: '#/definitions/github_com_devian2011_msgchute_pkg_http_response.Response'
       summary: Send message
       tags:
-      - messages
+      - public.messages
 securityDefinitions:
   ApiKeyAuth:
     description: Bearer token authentication

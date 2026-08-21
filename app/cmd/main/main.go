@@ -9,6 +9,7 @@ import (
 	"runtime/debug"
 	"syscall"
 
+	_ "github.com/devian2011/msgchute/docs"
 	"github.com/devian2011/msgchute/internal"
 )
 

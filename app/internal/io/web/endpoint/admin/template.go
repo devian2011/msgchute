@@ -45,7 +45,7 @@ func NewTemplateFinderEndpoint(h templateFinderHandler) *TemplateFinderEndpoint 
 //
 //	@Summary		List and filter templates
 //	@Description	Retrieves a paginated collection of message templates filtered by system code arrays or full-text query matches.
-//	@Tags			admin-templates
+//	@Tags			admin.templates
 //	@Accept			x-www-form-urlencoded
 //	@Produce		json
 //	@Param			page		query		int						false	"Page index parameter"		default(1)
@@ -117,7 +117,7 @@ func NewTemplateCreationEndpoint(h templateCreationHandler) *TemplateCreationEnd
 //
 //	@Summary		Create a template
 //	@Description	Creates and stores a completely new message configuration blueprint in the repository.
-//	@Tags			admin-templates
+//	@Tags			admin.templates
 //	@Accept			json
 //	@Produce		json
 //	@Param			request	body		dto.Template		true	"Structural definition specification metrics payload"
@@ -156,7 +156,7 @@ func NewTemplateUpdateEndpoint(h templateUpdateHandler) *TemplateUpdateEndpoint 
 //
 //	@Summary		Update a template
 //	@Description	Modifies variables, subjects, or raw body layouts of an existing layout found by its explicit target code route component.
-//	@Tags			admin-templates
+//	@Tags			admin.templates
 //	@Accept			json
 //	@Produce		json
 //	@Param			code	path		string				true	"Target identifying tracking code token context"

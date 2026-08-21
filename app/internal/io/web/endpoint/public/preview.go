@@ -32,7 +32,7 @@ func NewMessagePreviewEndpoint(h previewHandler) *MessagePreviewEndpoint {
 //
 //	@Summary		Preview message
 //	@Description	Accepts a raw message template along with dynamic parameters, renders them, and returns the final subject and body preview.
-//	@Tags			messages
+//	@Tags			public.messages
 //	@Accept			json
 //	@Produce		json
 //	@Param			request	body		PreviewMessageRequest	true	"Message template definition and rendering context"

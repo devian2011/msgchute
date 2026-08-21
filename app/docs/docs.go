@@ -25,7 +25,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "messages"
+                    "admin.dictionaries"
                 ],
                 "summary": "Get message dictionaries",
                 "responses": {
@@ -54,7 +54,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "messages"
+                    "admin.messages"
                 ],
                 "summary": "Get recipients list",
                 "parameters": [
@@ -94,7 +94,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "admin-messages"
+                    "admin.messages"
                 ],
                 "summary": "List and filter messages",
                 "parameters": [
@@ -217,7 +217,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "admin-messages"
+                    "admin.messages"
                 ],
                 "summary": "Get message by ID",
                 "parameters": [
@@ -262,7 +262,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "admin-templates"
+                    "admin.templates"
                 ],
                 "summary": "List and filter templates",
                 "parameters": [
@@ -339,7 +339,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "admin-templates"
+                    "admin.templates"
                 ],
                 "summary": "Create a template",
                 "parameters": [
@@ -385,7 +385,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "admin-templates"
+                    "admin.templates"
                 ],
                 "summary": "Update a template",
                 "parameters": [
@@ -438,7 +438,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "messages"
+                    "public.messages"
                 ],
                 "summary": "Send multiple messages",
                 "parameters": [
@@ -490,7 +490,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "messages"
+                    "public.messages"
                 ],
                 "summary": "Retry a message",
                 "parameters": [
@@ -536,7 +536,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "messages"
+                    "public.messages"
                 ],
                 "summary": "Preview message",
                 "parameters": [
@@ -582,7 +582,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "messages"
+                    "public.messages"
                 ],
                 "summary": "Send message",
                 "parameters": [
@@ -858,6 +858,9 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "last_run": {
+                    "type": "string"
+                },
+                "lock_until": {
                     "type": "string"
                 },
                 "max_retries": {

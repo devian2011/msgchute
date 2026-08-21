@@ -18,7 +18,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "messages"
+                    "admin.dictionaries"
                 ],
                 "summary": "Get message dictionaries",
                 "responses": {
@@ -47,7 +47,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "messages"
+                    "admin.messages"
                 ],
                 "summary": "Get recipients list",
                 "parameters": [
@@ -87,7 +87,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "admin-messages"
+                    "admin.messages"
                 ],
                 "summary": "List and filter messages",
                 "parameters": [
@@ -210,7 +210,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "admin-messages"
+                    "admin.messages"
                 ],
                 "summary": "Get message by ID",
                 "parameters": [
@@ -255,7 +255,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "admin-templates"
+                    "admin.templates"
                 ],
                 "summary": "List and filter templates",
                 "parameters": [
@@ -332,7 +332,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "admin-templates"
+                    "admin.templates"
                 ],
                 "summary": "Create a template",
                 "parameters": [
@@ -378,7 +378,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "admin-templates"
+                    "admin.templates"
                 ],
                 "summary": "Update a template",
                 "parameters": [
@@ -431,7 +431,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "messages"
+                    "public.messages"
                 ],
                 "summary": "Send multiple messages",
                 "parameters": [
@@ -483,7 +483,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "messages"
+                    "public.messages"
                 ],
                 "summary": "Retry a message",
                 "parameters": [
@@ -529,7 +529,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "messages"
+                    "public.messages"
                 ],
                 "summary": "Preview message",
                 "parameters": [
@@ -575,7 +575,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "messages"
+                    "public.messages"
                 ],
                 "summary": "Send message",
                 "parameters": [
@@ -851,6 +851,9 @@
                     "type": "boolean"
                 },
                 "last_run": {
+                    "type": "string"
+                },
+                "lock_until": {
                     "type": "string"
                 },
                 "max_retries": {

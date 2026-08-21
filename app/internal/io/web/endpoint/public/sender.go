@@ -41,7 +41,7 @@ func NewSenderEndpoint(h senderHandler) *SenderEndpoint {
 //
 //	@Summary		Send message
 //	@Description	Accepts a message payload, processes its delivery, and registers the tracking task.
-//	@Tags			messages
+//	@Tags			public.messages
 //	@Accept			json
 //	@Produce		json
 //	@Param			request	body		SenderMessageRequest	true	"Message details to be processed and sent"
@@ -100,7 +100,7 @@ func NewBatchSenderEndpoint(h batchSenderHandler) *BatchSenderEndpoint {
 //
 //	@Summary		Send multiple messages
 //	@Description	Accepts an array of message payloads, processes their delivery, and registers tracking tasks for each.
-//	@Tags			messages
+//	@Tags			public.messages
 //	@Accept			json
 //	@Produce		json
 //	@Param			request	body		[]SenderMessageRequest		true	"List of messages to be processed and sent"
@@ -157,7 +157,7 @@ func NewMessageRetryEndpoint(h messageRetryHandler) *MessageRetryEndpoint {
 //
 //	@Summary		Retry a message
 //	@Description	Creates a new task to retry a previously failed or pending message. It allows overriding retry policy and schedule.
-//	@Tags			messages
+//	@Tags			public.messages
 //	@Accept			json
 //	@Produce		json
 //	@Param			request	body		dto.MessageRetryRequest	true	"Retry request parameters"

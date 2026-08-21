@@ -28,7 +28,7 @@ func NewMessageRecipientFinderEndpoint(h messageRecipientFindHandler) *MessageRe
 // @Summary		Get recipients list
 // @Description	Returns a list of unique recipient addresses (emails, phone numbers, etc.) from all messages.
 // @Description	If the `search` parameter is provided, the result is filtered by case‑insensitive substring match.
-// @Tags			messages
+// @Tags			admin.messages
 // @Accept			json
 // @Produce		json
 // @Param			search	query		string				false	"Search substring to filter recipients (case‑insensitive). If empty, all recipients are returned."
@@ -58,7 +58,7 @@ func NewMessageDictionaryEndpoint(h messageDictionaryHandler) *MessageDictionary
 
 // @Summary		Get message dictionaries
 // @Description	Returns reference data used for filtering messages: available transports, statuses, template codes, and senders.
-// @Tags			messages
+// @Tags			admin.dictionaries
 // @Accept			json
 // @Produce		json
 // @Success		200	{object}	dto.MessageDictionaries	"Successfully returned dictionary data"
@@ -107,7 +107,7 @@ func NewMessageFinderEndpoint(h messageFinderHandler) *MessageFinderEndpoint {
 //
 //	@Summary		List and filter messages
 //	@Description	Retrieves a paginated list of messages filtered by status, IDs, recipients, senders, codes, or transports.
-//	@Tags			admin-messages
+//	@Tags			admin.messages
 //	@Accept			x-www-form-urlencoded
 //	@Produce		json
 //	@Param			page		query		int						false	"Page number for pagination"	default(1)
@@ -181,7 +181,7 @@ func NewMessageFinderByIDEndpoint(h messageFinderByIDHandler) *MessageFinderByID
 //
 //	@Summary		Get message by ID
 //	@Description	Retrieves full message details for a specific record via its UUID.
-//	@Tags			admin-messages
+//	@Tags			admin.messages
 //	@Accept			json
 //	@Produce		json
 //	@Param			id	path		string				true	"Unique message UUID identifier"	format(uuid)
