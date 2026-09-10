@@ -74,7 +74,7 @@ func Bootstrap(ctx context.Context, cfgFilePath string) (*registry.AppRegistry, 
 
 	// msgSender
 	msgSender := sender.NewSender(ctx, cfg.Providers, providerManager, workerManager, tmplMgr)
-	msgQueue := sender.NewQueue(ctx, db, taskRepo, msgRepo)
+	msgQueue := sender.NewQueue(ctx, db, taskRepo, msgRepo, cfg.Providers.Providers, tmplMgr)
 
 	return &registry.AppRegistry{
 		DB:           db,
@@ -90,6 +90,7 @@ func Bootstrap(ctx context.Context, cfgFilePath string) (*registry.AppRegistry, 
 		},
 		Handlers: &registry.Handlers{
 			Public: &registry.PublicHandlers{
+				Transports:  cfg.Providers.Transports(),
 				Sender:      public.NewSenderHandler(msgQueue),
 				BatchSender: public.NewBatchSenderHandler(msgQueue),
 				Preview:     public.NewPreviewHandler(tmplMgr),
