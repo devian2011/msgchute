@@ -119,7 +119,6 @@ func TestSender_Init(t *testing.T) {
 
 	pm := new(MockProviderManager)
 	wm := new(MockWorkerManager)
-	tmplGen := new(MockTemplateGenerator)
 
 	pm.On("BuildPlugin", "email", "", mock.Anything).Return(nil).Once()
 	pm.On("BuildPlugin", "sms", "", mock.Anything).Return(nil).Once()
@@ -127,7 +126,7 @@ func TestSender_Init(t *testing.T) {
 	wm.On("RegisterWorker", "email", mock.Anything, mock.Anything).Return(nil).Once()
 	wm.On("RegisterWorker", "sms", mock.Anything, mock.Anything).Return(nil).Once()
 
-	sender := NewSender(ctx, cfg, pm, wm, tmplGen)
+	sender := NewSender(ctx, cfg, pm, wm)
 	err := sender.Init()
 	assert.NoError(t, err)
 	wm.AssertExpectations(t)
@@ -158,12 +157,11 @@ func TestSender_Init_Error(t *testing.T) {
 
 	pm := new(MockProviderManager)
 	wm := new(MockWorkerManager)
-	tmplGen := new(MockTemplateGenerator)
 
 	pm.On("BuildPlugin", "email", "", mock.Anything).Return(nil).Once()
 	wm.On("RegisterWorker", "email", mock.Anything, mock.Anything).Return(errors.New("registration failed")).Once()
 
-	sender := NewSender(ctx, cfg, pm, wm, tmplGen)
+	sender := NewSender(ctx, cfg, pm, wm)
 	err := sender.Init()
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "registration failed")
@@ -176,9 +174,8 @@ func TestSender_sendFunc(t *testing.T) {
 	cfg := &Config{}
 	pm := new(MockProviderManager)
 	wm := new(MockWorkerManager)
-	tmplGen := new(MockTemplateGenerator)
 
-	sender := NewSender(ctx, cfg, pm, wm, tmplGen)
+	sender := NewSender(ctx, cfg, pm, wm)
 	sendFunc := sender.sendFunc
 
 	t.Run("success", func(t *testing.T) {
@@ -191,7 +188,6 @@ func TestSender_sendFunc(t *testing.T) {
 		}
 		payload, _ := sonic.Marshal(msg)
 
-		tmplGen.On("GenerateMessage", msg).Return("Hello", "World", nil).Once()
 		prv := new(MockProvider)
 		prv.On("Send", mock.Anything).Return(&provider.MessageResponse{
 			Response: "OK",
@@ -202,7 +198,6 @@ func TestSender_sendFunc(t *testing.T) {
 		resp, execErr := sendFunc(ctx, payload)
 		assert.Equal(t, "OK", resp)
 		assert.Nil(t, execErr)
-		tmplGen.AssertExpectations(t)
 		pm.AssertExpectations(t)
 		prv.AssertExpectations(t)
 	})
@@ -242,7 +237,6 @@ func TestSender_sendFunc(t *testing.T) {
 		}
 		payload, _ := sonic.Marshal(msg)
 
-		tmplGen.On("GenerateMessage", msg).Return("", "", errors.New("template error")).Once()
 		prv := new(MockProvider)
 		pm.On("GetProvider", "email").Return(prv, nil).Once()
 
@@ -251,7 +245,6 @@ func TestSender_sendFunc(t *testing.T) {
 		require.NotNil(t, execErr)
 		assert.Equal(t, retrier.CriticalState, execErr.State)
 		assert.Contains(t, execErr.Err.Error(), "error generate task message payload")
-		tmplGen.AssertExpectations(t)
 		pm.AssertExpectations(t)
 	})
 
@@ -263,7 +256,6 @@ func TestSender_sendFunc(t *testing.T) {
 		}
 		payload, _ := sonic.Marshal(msg)
 
-		tmplGen.On("GenerateMessage", msg).Return("", "", nil).Once()
 		prv := new(MockProvider)
 		prv.On("Send", mock.Anything).Return(&provider.MessageResponse{
 			Err:        errors.New("send failed"),
@@ -276,7 +268,6 @@ func TestSender_sendFunc(t *testing.T) {
 		require.NotNil(t, execErr)
 		assert.Equal(t, retrier.CriticalState, execErr.State)
 		assert.Contains(t, execErr.Err.Error(), "error on message send")
-		tmplGen.AssertExpectations(t)
 		pm.AssertExpectations(t)
 		prv.AssertExpectations(t)
 	})
@@ -288,7 +279,6 @@ func TestSender_sendFunc(t *testing.T) {
 		}
 		payload, _ := sonic.Marshal(msg)
 
-		tmplGen.On("GenerateMessage", msg).Return("", "", nil).Once()
 		prv := new(MockProvider)
 		prv.On("Send", mock.Anything).Return(&provider.MessageResponse{
 			Err:        errors.New("send failed"),
@@ -301,7 +291,6 @@ func TestSender_sendFunc(t *testing.T) {
 		require.NotNil(t, execErr)
 		assert.Equal(t, retrier.UsualState, execErr.State)
 		assert.Contains(t, execErr.Err.Error(), "error on message send")
-		tmplGen.AssertExpectations(t)
 		pm.AssertExpectations(t)
 		prv.AssertExpectations(t)
 	})
@@ -312,11 +301,10 @@ func TestSender_Run(t *testing.T) {
 	cfg := &Config{}
 	pm := new(MockProviderManager)
 	wm := new(MockWorkerManager)
-	tmplGen := new(MockTemplateGenerator)
 
 	wm.On("Start").Once()
 
-	sender := NewSender(ctx, cfg, pm, wm, tmplGen)
+	sender := NewSender(ctx, cfg, pm, wm)
 	sender.Run()
 	wm.AssertExpectations(t)
 }
@@ -326,12 +314,11 @@ func TestSender_Shutdown(t *testing.T) {
 	cfg := &Config{}
 	pm := new(MockProviderManager)
 	wm := new(MockWorkerManager)
-	tmplGen := new(MockTemplateGenerator)
 
 	wm.On("Stop").Once()
 	pm.On("Close").Once()
 
-	sender := NewSender(ctx, cfg, pm, wm, tmplGen)
+	sender := NewSender(ctx, cfg, pm, wm)
 	sender.Shutdown()
 	wm.AssertExpectations(t)
 	pm.AssertExpectations(t)

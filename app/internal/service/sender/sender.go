@@ -12,10 +12,6 @@ import (
 	"github.com/devian2011/msgchute/pkg/shared/provider"
 )
 
-type TemplateGenerator interface {
-	GenerateMessage(*dto.Message) (subject string, body string, err error)
-}
-
 type pm interface {
 	GetProvider(code string) (provider.Provider, error)
 	BuildPlugin(name string, code string, params []byte) error
@@ -29,11 +25,10 @@ type wm interface {
 }
 
 type Sender struct {
-	ctx           context.Context
-	cfg           *Config
-	pm            pm
-	wm            wm
-	tmplGenerator TemplateGenerator
+	ctx context.Context
+	cfg *Config
+	pm  pm
+	wm  wm
 }
 
 func NewSender(
@@ -41,14 +36,12 @@ func NewSender(
 	cfg *Config,
 	pm pm,
 	wm wm,
-	tmplGenerator TemplateGenerator,
 ) *Sender {
 	return &Sender{
-		ctx:           ctx,
-		cfg:           cfg,
-		pm:            pm,
-		wm:            wm,
-		tmplGenerator: tmplGenerator,
+		ctx: ctx,
+		cfg: cfg,
+		pm:  pm,
+		wm:  wm,
 	}
 }
 
@@ -112,22 +105,13 @@ func (s *Sender) sendFunc(_ context.Context, payload []byte) (string, *retrier.E
 		}
 	}
 
-	subject, body, generateErr := s.tmplGenerator.GenerateMessage(&msg)
-	if generateErr != nil {
-		return "", &retrier.ExecutionError{
-			Err: fmt.Errorf("error generate task message payload: %s, err: %v",
-				string(payload), getProviderErr),
-			State: retrier.CriticalState,
-		}
-	}
-
 	msgParams, _ := sonic.Marshal(msg.Meta)
 
 	result := prv.Send(&provider.Message{
 		To:      msg.Recipients,
 		Params:  msgParams,
-		Subject: subject,
-		Body:    body,
+		Subject: msg.Subject,
+		Body:    msg.Body,
 	})
 
 	if result.Err != nil {

@@ -1,11 +1,17 @@
 package template
 
 import (
+	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/flosch/pongo2/v7"
 
 	"github.com/devian2011/msgchute/internal/dto"
+)
+
+var (
+	MissingRequiredParamErr = errors.New("missing required param")
 )
 
 type Generator struct {
@@ -37,7 +43,10 @@ func (g *Generator) GenerateString(
 		return "", err
 	}
 
-	params := g.buildParams(messageParams, tmplParams)
+	params, buildParamErr := g.buildParams(messageParams, tmplParams)
+	if buildParamErr != nil {
+		return "", buildParamErr
+	}
 	context := pongo2.Context(params)
 
 	result, err := pTmpl.Execute(context)
@@ -51,14 +60,25 @@ func (g *Generator) GenerateString(
 func (g *Generator) buildParams(
 	messageParams map[string]*dto.MessageParam,
 	tmplParams map[string]*dto.TemplateParam,
-) map[string]interface{} {
+) (map[string]interface{}, error) {
 	result := make(map[string]interface{}, len(tmplParams))
+	missing := make([]string, 0, len(tmplParams))
 	for pName, pValue := range tmplParams {
 		if inPVal, exists := messageParams[pName]; exists {
 			result[pName] = inPVal.Value
 		} else {
-			result[pName] = pValue.Default
+			if len(pValue.Default) == 0 {
+				missing = append(missing, pName)
+			} else {
+				result[pName] = pValue.Default
+			}
 		}
 	}
-	return result
+	if len(missing) > 0 {
+		return nil, errors.Join(
+			MissingRequiredParamErr,
+			fmt.Errorf("missing required params: %s", strings.Join(missing, ", ")))
+	}
+
+	return result, nil
 }

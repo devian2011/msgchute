@@ -3,6 +3,7 @@ package sender
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"time"
 
@@ -15,19 +16,31 @@ import (
 	"github.com/devian2011/msgchute/pkg/generate"
 )
 
-type Queue struct {
-	ctx         context.Context
-	db          *sqlx.DB
-	taskRepo    taskRepo
-	messageRepo messageRepo
+type TemplateGenerator interface {
+	GenerateMessage(*dto.Message) (subject string, body string, err error)
 }
 
-func NewQueue(ctx context.Context, db *sqlx.DB, taskRepo taskRepo, messageRepo messageRepo) *Queue {
+type Queue struct {
+	ctx           context.Context
+	db            *sqlx.DB
+	taskRepo      taskRepo
+	messageRepo   messageRepo
+	tmplGenerator TemplateGenerator
+}
+
+func NewQueue(
+	ctx context.Context,
+	db *sqlx.DB,
+	taskRepo taskRepo,
+	messageRepo messageRepo,
+	tmplGenerator TemplateGenerator,
+) *Queue {
 	return &Queue{
-		ctx:         ctx,
-		db:          db,
-		taskRepo:    taskRepo,
-		messageRepo: messageRepo,
+		ctx:           ctx,
+		db:            db,
+		taskRepo:      taskRepo,
+		messageRepo:   messageRepo,
+		tmplGenerator: tmplGenerator,
 	}
 }
 
@@ -44,6 +57,13 @@ func (s *Queue) Add(message *dto.Message) (*dto.Message, *dto.Task, error) {
 			},
 		}
 	}
+
+	subject, body, generateErr := s.tmplGenerator.GenerateMessage(message)
+	if generateErr != nil {
+		return nil, nil, errors.Join(fmt.Errorf("message generation err"), generateErr)
+	}
+	message.Subject = subject
+	message.Body = body
 
 	// If set new schedule
 	nextRun := now

@@ -184,7 +184,8 @@ type Template struct {
 
 // TemplateParam handles structural fallback expectations when explicit variables remain unassigned.
 type TemplateParam struct {
-	Default string `json:"default"`
+	Default    string `json:"default"`
+	IsRequired bool   `json:"is_required"`
 }
 
 // TemplateParams lists baseline injection requirements needed to synthesize functional notifications.

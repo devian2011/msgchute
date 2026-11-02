@@ -73,8 +73,8 @@ func Bootstrap(ctx context.Context, cfgFilePath string) (*registry.AppRegistry, 
 	msgFinder := message.NewFinder(db, msgRepo, taskRepo, taskResultRepo)
 
 	// msgSender
-	msgSender := sender.NewSender(ctx, cfg.Providers, providerManager, workerManager, tmplMgr)
-	msgQueue := sender.NewQueue(ctx, db, taskRepo, msgRepo)
+	msgSender := sender.NewSender(ctx, cfg.Providers, providerManager, workerManager)
+	msgQueue := sender.NewQueue(ctx, db, taskRepo, msgRepo, tmplMgr)
 
 	return &registry.AppRegistry{
 		DB:           db,

@@ -108,8 +108,9 @@ func TestQueue_Add(t *testing.T) {
 
 			mockTaskRepo := new(MockTaskRepo)
 			mockMsgRepo := new(MockMessageRepo)
+			tmplGen := new(MockTemplateGenerator)
 
-			queue := NewQueue(context.Background(), sqlxDB, mockTaskRepo, mockMsgRepo)
+			queue := NewQueue(context.Background(), sqlxDB, mockTaskRepo, mockMsgRepo, tmplGen)
 
 			switch {
 			case tt.mockMsgErr != nil:
@@ -341,8 +342,9 @@ func TestQueue_Retry(t *testing.T) {
 
 			mockTaskRepo := new(MockTaskRepo)
 			mockMsgRepo := new(MockMessageRepo)
+			tmplGen := new(MockTemplateGenerator)
 
-			queue := NewQueue(context.Background(), sqlxDB, mockTaskRepo, mockMsgRepo)
+			queue := NewQueue(context.Background(), sqlxDB, mockTaskRepo, mockMsgRepo, tmplGen)
 
 			mockMsgRepo.On("GetByID", mock.Anything, tt.request.ID).Return(tt.mockMsg, tt.mockMsgErr).Once()
 
