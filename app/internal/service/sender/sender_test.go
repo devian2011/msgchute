@@ -54,15 +54,6 @@ func (m *MockWorkerManager) Stop() {
 	m.Called()
 }
 
-type MockTemplateGenerator struct {
-	mock.Mock
-}
-
-func (m *MockTemplateGenerator) GenerateMessage(msg *dto.Message) (subject string, body string, err error) {
-	args := m.Called(msg)
-	return args.String(0), args.String(1), args.Error(2)
-}
-
 type MockProvider struct {
 	mock.Mock
 }
@@ -230,24 +221,7 @@ func TestSender_sendFunc(t *testing.T) {
 	t.Run("message unmarshal error", func(t *testing.T) {
 		// уже есть тест на invalid json, этот можно убрать
 	})
-
-	t.Run("template generation error", func(t *testing.T) {
-		msg := &dto.Message{
-			Transport: "email",
-		}
-		payload, _ := sonic.Marshal(msg)
-
-		prv := new(MockProvider)
-		pm.On("GetProvider", "email").Return(prv, nil).Once()
-
-		resp, execErr := sendFunc(ctx, payload)
-		assert.Empty(t, resp)
-		require.NotNil(t, execErr)
-		assert.Equal(t, retrier.CriticalState, execErr.State)
-		assert.Contains(t, execErr.Err.Error(), "error generate task message payload")
-		pm.AssertExpectations(t)
-	})
-
+	
 	t.Run("provider send error (critical)", func(t *testing.T) {
 		msg := &dto.Message{
 			Transport:  "email",

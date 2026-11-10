@@ -167,7 +167,7 @@ func (r *MessageTemplateRepository) Find(
 		selectBuilder = selectBuilder.Offset(filter.Offset)
 	}
 
-	orderClause := "order ASC"
+	orderClause := "\"order\" ASC"
 	if filter.SortField != nil && *filter.SortField != "" {
 		field := strings.ToLower(*filter.SortField)
 		allowed := map[string]bool{

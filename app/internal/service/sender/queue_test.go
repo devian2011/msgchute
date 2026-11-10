@@ -16,6 +16,15 @@ import (
 	"github.com/devian2011/msgchute/internal/dto"
 )
 
+type MockTemplateGenerator struct {
+	mock.Mock
+}
+
+func (m *MockTemplateGenerator) GenerateMessage(msg *dto.Message) (subject string, body string, err error) {
+	args := m.Called(msg)
+	return args.String(0), args.String(1), args.Error(2)
+}
+
 func TestQueue_Add(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -111,6 +120,11 @@ func TestQueue_Add(t *testing.T) {
 			tmplGen := new(MockTemplateGenerator)
 
 			queue := NewQueue(context.Background(), sqlxDB, mockTaskRepo, mockMsgRepo, tmplGen)
+
+			tmplGen.
+				On("GenerateMessage", mock.Anything).
+				Return("test subject", "test body", nil).
+				Once()
 
 			switch {
 			case tt.mockMsgErr != nil:

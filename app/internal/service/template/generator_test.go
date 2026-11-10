@@ -113,7 +113,7 @@ func TestGenerator_buildParams(t *testing.T) {
 		"user": {Value: "Alex"},
 	}
 
-	res := g.buildParams(messageParams, tmplParams)
+	res, _ := g.buildParams(messageParams, tmplParams)
 
 	if res["user"] != "Alex" {
 		t.Errorf("Expected 'Alex', got: %v", res["user"])
@@ -137,7 +137,7 @@ func BenchmarkGenerator_buildParams(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_ = g.buildParams(messageParams, tmplParams)
+		_, _ = g.buildParams(messageParams, tmplParams)
 	}
 }
 
