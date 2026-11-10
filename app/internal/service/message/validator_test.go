@@ -2,21 +2,23 @@ package message
 
 import (
 	"sync"
+	"sync/atomic"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/devian2011/msgchute/internal/dto"
+	"github.com/stretchr/testify/assert"
 )
 
 // mockProviderMapper is a stub for the ProviderMapper interface.
+// It is safe for concurrent use: `calls` is atomic because the
+// validator's concurrency test invokes GetProviders from many goroutines.
 type mockProviderMapper struct {
 	providers []string
-	calls     int
+	calls     atomic.Int64
 }
 
 func (m *mockProviderMapper) GetProviders() []string {
-	m.calls++
+	m.calls.Add(1)
 	return m.providers
 }
 
@@ -122,7 +124,8 @@ func TestValidator_Validate_CallsGetProvidersOnce(t *testing.T) {
 
 	v.Validate(&dto.Message{Transport: "email"})
 
-	assert.Equal(t, 1, mapper.calls, "GetProviders must be called exactly once")
+	assert.Equal(t, int64(1), mapper.calls.Load(),
+		"GetProviders must be called exactly once")
 }
 
 func TestValidator_Validate_DoesNotMutateMessage(t *testing.T) {
@@ -155,7 +158,8 @@ func TestValidator_Validate_NilMessage_DoesNotCallGetProviders(t *testing.T) {
 
 	v.Validate(nil)
 
-	assert.Equal(t, 0, mapper.calls, "GetProviders must not be called for a nil message")
+	assert.Equal(t, int64(0), mapper.calls.Load(),
+		"GetProviders must not be called for a nil message")
 }
 
 // --- Concurrency (run with -race) ---
@@ -163,6 +167,7 @@ func TestValidator_Validate_NilMessage_DoesNotCallGetProviders(t *testing.T) {
 func TestValidator_Validate_Concurrent(t *testing.T) {
 	// Validator holds no mutable state and is safe for concurrent use.
 	// This test guards against future regressions (e.g., a cache without a mutex).
+	// The mock's `calls` counter is atomic so the test itself does not race.
 	mapper := &mockProviderMapper{providers: []string{"email", "sms"}}
 	v := NewValidator(mapper)
 
@@ -191,4 +196,7 @@ func TestValidator_Validate_Concurrent(t *testing.T) {
 	}
 
 	wg.Wait()
+
+	assert.Equal(t, int64(goroutines), mapper.calls.Load(),
+		"GetProviders must be called exactly once per validation")
 }
