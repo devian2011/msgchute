@@ -76,6 +76,8 @@ func Bootstrap(ctx context.Context, cfgFilePath string) (*registry.AppRegistry, 
 	msgSender := sender.NewSender(ctx, cfg.Providers, providerManager, workerManager)
 	msgQueue := sender.NewQueue(ctx, db, taskRepo, msgRepo, tmplMgr)
 
+	validator := message.NewValidator(providerManager)
+
 	return &registry.AppRegistry{
 		DB:           db,
 		Http:         httpSrv,
@@ -90,8 +92,8 @@ func Bootstrap(ctx context.Context, cfgFilePath string) (*registry.AppRegistry, 
 		},
 		Handlers: &registry.Handlers{
 			Public: &registry.PublicHandlers{
-				Sender:      public.NewSenderHandler(msgQueue),
-				BatchSender: public.NewBatchSenderHandler(msgQueue),
+				Sender:      public.NewSenderHandler(msgQueue, validator),
+				BatchSender: public.NewBatchSenderHandler(msgQueue, validator),
 				Preview:     public.NewPreviewHandler(tmplMgr),
 				Retrier:     public.NewMessageRetryHandler(msgQueue),
 			},

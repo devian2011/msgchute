@@ -27,7 +27,8 @@ type AddMessageResponse struct {
 }
 
 type AddBatchMessageResponse struct {
-	Message *Message `json:"message"`
-	Task    *Task    `json:"task"`
-	Err     error    `json:"error"`
+	Message *Message         `json:"message"`
+	Task    *Task            `json:"task"`
+	Err     error            `json:"error"`
+	VErr    map[string]error `json:"validation_errors"`
 }

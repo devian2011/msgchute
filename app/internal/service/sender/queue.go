@@ -16,7 +16,7 @@ import (
 	"github.com/devian2011/msgchute/pkg/generate"
 )
 
-type TemplateGenerator interface {
+type templateGenerator interface {
 	GenerateMessage(*dto.Message) (subject string, body string, err error)
 }
 
@@ -25,7 +25,7 @@ type Queue struct {
 	db            *sqlx.DB
 	taskRepo      taskRepo
 	messageRepo   messageRepo
-	tmplGenerator TemplateGenerator
+	tmplGenerator templateGenerator
 }
 
 func NewQueue(
@@ -33,7 +33,7 @@ func NewQueue(
 	db *sqlx.DB,
 	taskRepo taskRepo,
 	messageRepo messageRepo,
-	tmplGenerator TemplateGenerator,
+	tmplGenerator templateGenerator,
 ) *Queue {
 	return &Queue{
 		ctx:           ctx,

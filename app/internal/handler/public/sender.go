@@ -2,7 +2,12 @@ package public
 
 import (
 	"github.com/devian2011/msgchute/internal/dto"
+	"github.com/devian2011/msgchute/pkg/helper"
 )
+
+type validator interface {
+	Validate(msg *dto.Message) (bool, map[string]error)
+}
 
 type queue interface {
 	Add(*dto.Message) (*dto.Message, *dto.Task, error)
@@ -10,13 +15,19 @@ type queue interface {
 
 type SenderHandler struct {
 	q queue
+	v validator
 }
 
-func NewSenderHandler(q queue) *SenderHandler {
-	return &SenderHandler{q: q}
+func NewSenderHandler(q queue, v validator) *SenderHandler {
+	return &SenderHandler{q: q, v: v}
 }
 
 func (h *SenderHandler) Handle(msg *dto.Message) (*dto.Message, *dto.Task, error) {
+	hasErrors, vErr := h.v.Validate(msg)
+	if hasErrors {
+		return nil, nil, helper.ErrMapToError(vErr)
+	}
+
 	return h.q.Add(msg)
 }
 
@@ -24,20 +35,29 @@ func (h *SenderHandler) Handle(msg *dto.Message) (*dto.Message, *dto.Task, error
 
 type BatchSenderHandler struct {
 	q queue
+	v validator
 }
 
-func NewBatchSenderHandler(q queue) *BatchSenderHandler {
-	return &BatchSenderHandler{q: q}
+func NewBatchSenderHandler(q queue, v validator) *BatchSenderHandler {
+	return &BatchSenderHandler{q: q, v: v}
 }
 
 func (h *BatchSenderHandler) Handle(msg []*dto.Message) []*dto.AddBatchMessageResponse {
 	var results []*dto.AddBatchMessageResponse
 	for i := range msg {
-		m, t, e := h.q.Add(msg[i])
+		hasErrors, vR := h.v.Validate(msg[i])
+		var m *dto.Message
+		var t *dto.Task
+		var e error
+		if !hasErrors {
+			m, t, e = h.q.Add(msg[i])
+		}
+
 		results = append(results, &dto.AddBatchMessageResponse{
 			Message: m,
 			Task:    t,
 			Err:     e,
+			VErr:    vR,
 		})
 	}
 
