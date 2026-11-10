@@ -76,16 +76,21 @@
               Name
               <span v-if="filters.sortField === 'name'">{{ filters.sortOrder === 'asc' ? '▲' : '▼' }}</span>
             </BTh>
+            <BTh style="width: 25%; cursor: pointer;" @click="toggleSort('name')">
+              Order
+              <span v-if="filters.sortField === 'order'">{{ filters.sortOrder === 'asc' ? '▲' : '▼' }}</span>
+            </BTh>
             <BTh style="width: 35%">Description</BTh>
             <BTh style="width: 15%" class="text-end">Actions</BTh>
           </BTr>
         </BThead>
 
         <BTbody>
-          <template v-for="(template, code) in templatesMap" :key="code">
+          <template v-for="template in sortedTemplates" :key="template.code">
             <BTr>
               <BTd><code class="text-danger font-monospace fw-bold">{{ template.code }}</code></BTd>
               <BTd class="fw-semibold">{{ template.name }}</BTd>
+              <BTd class="fw-semibold">{{ template.order }}</BTd>
               <BTd class="text-muted text-truncate" style="max-width: 300px;">
                 {{ template.description || '—' }}
               </BTd>
@@ -111,6 +116,12 @@
                       <BCol cols="12">
                         <BFormGroup label="Template Name *" label-class="fw-bold">
                           <BFormInput v-model="editForm.name" required/>
+                        </BFormGroup>
+                      </BCol>
+
+                      <BCol cols="12">
+                        <BFormGroup label="Order" label-class="fw-bold">
+                          <BFormInput v-model="editForm.order" required/>
                         </BFormGroup>
                       </BCol>
 
@@ -248,6 +259,12 @@
           </BCol>
 
           <BCol cols="12">
+            <BFormGroup label="Order" label-class="fw-bold">
+              <BFormInput v-model="createForm.order" required />
+            </BFormGroup>
+          </BCol>
+
+          <BCol cols="12">
             <BFormGroup label="Description" label-class="fw-bold">
               <BFormTextarea v-model="createForm.description" rows="2" placeholder="Describe deployment contexts" />
             </BFormGroup>
@@ -355,7 +372,7 @@ const filters = reactive({
   per_page: 10,
   search: '',
   code: [],
-  sortField: '',
+  sortField: 'order',
   sortOrder: 'asc'
 });
 
@@ -366,7 +383,8 @@ const editForm = reactive({
   description: '',
   subject: '',
   body: '',
-  params: {}
+  params: {},
+  order: 0,
 });
 
 const createModalOpen = ref(false);
@@ -376,7 +394,8 @@ const createForm = reactive({
   description: '',
   subject: '',
   body: '',
-  params: {}
+  params: {},
+  order: 0,
 });
 
 // Holds current text input buffer strings for new parameter fields
@@ -430,6 +449,15 @@ const fetchTemplates = async () => {
     loading.value = false;
   }
 };
+
+const sortedTemplates = computed(() => {
+  const templatesArray = Object.entries(templatesMap.value).map(([code, template]) => ({
+    code,
+    ...template
+  }));
+
+  return templatesArray.sort((a, b) => (a.order || 0) - (b.order || 0));
+});
 
 const toggleSort = (targetField) => {
   if (filters.sortField === targetField) {

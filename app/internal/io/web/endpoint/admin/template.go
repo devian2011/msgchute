@@ -65,7 +65,7 @@ func (e *TemplateFinderEndpoint) ServeHTTP(w http.ResponseWriter, r *http.Reques
 
 	// Default respSort.Field == code
 	if respSort.Field == "id" {
-		respSort.Field = "code"
+		respSort.Field = "order"
 	}
 
 	filter := &dto.MessageTemplateFilter{

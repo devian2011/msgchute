@@ -180,6 +180,7 @@ type Template struct {
 	Params      TemplateParams `json:"params" db:"params"`
 	Subject     string         `json:"subject" db:"subject" validate:"required"`
 	Body        string         `json:"body" db:"body" validate:"required"`
+	Order       int            `json:"order" db:"order"`
 }
 
 // TemplateParam handles structural fallback expectations when explicit variables remain unassigned.

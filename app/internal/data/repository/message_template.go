@@ -38,8 +38,8 @@ func (r *MessageTemplateRepository) getDB(ctx context.Context) DBContext {
 
 func (r *MessageTemplateRepository) Create(ctx context.Context, t *dto.Template) error {
 	query, args, err := r.builder.Insert(messageTemplatesTable).
-		Columns("code", "name", "description", "params", "subject", "body").
-		Values(t.Code, t.Name, t.Description, t.Params, t.Subject, t.Body).
+		Columns("code", "name", "description", "params", "subject", "body", `"order"`).
+		Values(t.Code, t.Name, t.Description, t.Params, t.Subject, t.Body, t.Order).
 		ToSql()
 	if err != nil {
 		return fmt.Errorf("build insert query: %w", err)
@@ -54,7 +54,7 @@ func (r *MessageTemplateRepository) Create(ctx context.Context, t *dto.Template)
 }
 
 func (r *MessageTemplateRepository) GetByCode(ctx context.Context, code string) (*dto.Template, error) {
-	query, args, err := r.builder.Select("code", "name", "description", "params", "subject", "body").
+	query, args, err := r.builder.Select("code", "name", "description", "params", "subject", "body", `"order"`).
 		From(messageTemplatesTable).
 		Where(squirrel.Eq{"code": code}).
 		Suffix("FOR UPDATE SKIP LOCKED").
@@ -81,6 +81,7 @@ func (r *MessageTemplateRepository) Update(ctx context.Context, t *dto.Template)
 		Set("params", t.Params).
 		Set("subject", t.Subject).
 		Set("body", t.Body).
+		Set(`"order"`, t.Order).
 		Where(squirrel.Eq{"code": t.Code}).
 		ToSql()
 	if err != nil {
@@ -129,7 +130,7 @@ func (r *MessageTemplateRepository) Find(
 	ctx context.Context,
 	filter *dto.MessageTemplateFilter,
 ) (map[string]*dto.Template, uint64, error) {
-	selectBuilder := r.builder.Select("code", "name", "description", "params", "subject", "body").
+	selectBuilder := r.builder.Select("code", "name", "description", "params", "subject", "body", `"order"`).
 		From(messageTemplatesTable)
 	countBuilder := r.builder.Select("COUNT(*)").
 		From(messageTemplatesTable)
@@ -166,18 +167,18 @@ func (r *MessageTemplateRepository) Find(
 		selectBuilder = selectBuilder.Offset(filter.Offset)
 	}
 
-	orderClause := "code ASC"
+	orderClause := "order ASC"
 	if filter.SortField != nil && *filter.SortField != "" {
 		field := strings.ToLower(*filter.SortField)
 		allowed := map[string]bool{
-			"code": true, "name": true, "subject": true,
+			"code": true, "name": true, "subject": true, "order": true,
 		}
 		if allowed[field] {
 			order := "ASC"
 			if filter.SortOrder != nil && strings.ToUpper(*filter.SortOrder) == "DESC" {
 				order = "DESC"
 			}
-			orderClause = fmt.Sprintf("%s %s", field, order)
+			orderClause = fmt.Sprintf("\"%s\" %s", field, order)
 		}
 	}
 	selectBuilder = selectBuilder.OrderBy(orderClause)
