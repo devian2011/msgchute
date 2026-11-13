@@ -179,18 +179,19 @@ type Template struct {
 	Metadata    TemplateMetadata `json:"metadata" db:"metadata"`
 	Systems     TemplateLabels   `json:"systems,omitempty" db:"systems"`
 	Channels    TemplateLabels   `json:"channels,omitempty" db:"channels"`
-	Code        string         `json:"code" db:"code" validate:"required"`
-	Name        string         `json:"name" db:"name" validate:"required"`
-	Description string         `json:"description" db:"description"`
-	Params      TemplateParams `json:"params" db:"params"`
-	Subject     string         `json:"subject" db:"subject" validate:"required"`
-	Body        string         `json:"body" db:"body" validate:"required"`
+	Code        string           `json:"code" db:"code" validate:"required"`
+	Name        string           `json:"name" db:"name" validate:"required"`
+	Description string           `json:"description" db:"description"`
+	Params      TemplateParams   `json:"params" db:"params"`
+	Subject     string           `json:"subject" db:"subject" validate:"required"`
+	Body        string           `json:"body" db:"body" validate:"required"`
+	Order       *int             `json:"order,omitempty" db:"order"`
 }
 
 // TemplateParam handles structural fallback expectations when explicit variables remain unassigned.
 type TemplateParam struct {
-	Default string `json:"default"`
-	Required *bool `json:"required,omitempty"`
+	Default  string `json:"default"`
+	Required *bool  `json:"required,omitempty"`
 }
 
 // TemplateParams lists baseline injection requirements needed to synthesize functional notifications.

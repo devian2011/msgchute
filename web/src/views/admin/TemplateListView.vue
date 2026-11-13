@@ -86,16 +86,21 @@
               Name
               <span v-if="filters.sortField === 'name'">{{ filters.sortOrder === 'asc' ? '▲' : '▼' }}</span>
             </BTh>
+            <BTh style="width: 25%; cursor: pointer;" @click="toggleSort('order')">
+              Order
+              <span v-if="filters.sortField === 'order'">{{ filters.sortOrder === 'asc' ? '▲' : '▼' }}</span>
+            </BTh>
             <BTh style="width: 35%">Description</BTh>
             <BTh style="width: 15%" class="text-end">Actions</BTh>
           </BTr>
         </BThead>
 
         <BTbody>
-          <template v-for="(template, code) in templatesMap" :key="code">
+          <template v-for="template in sortedTemplates" :key="template.code">
             <BTr>
               <BTd><code class="text-danger font-monospace fw-bold">{{ template.code }}</code></BTd>
               <BTd class="fw-semibold">{{ template.name }}</BTd>
+              <BTd class="fw-semibold">{{ template.order }}</BTd>
               <BTd class="text-muted text-truncate" style="max-width: 300px;">
                 {{ template.description || '—' }}
               </BTd>
@@ -110,7 +115,7 @@
               </BTd>
             </BTr>
             <BTr v-if="editingCode === template.code" class="table-light">
-              <BTd colspan="4" class="p-4">
+              <BTd colspan="5" class="p-4">
                 <BCard border-variant="primary" header-bg-variant="primary" header-text-variant="white">
                   <template #header>
                     <h5 class="mb-0">Edit Template: {{ editForm.code }}</h5>
@@ -121,6 +126,12 @@
                       <BCol cols="12">
                         <BFormGroup label="Template Name *" label-class="fw-bold">
                           <BFormInput v-model="editForm.name" required/>
+                        </BFormGroup>
+                      </BCol>
+
+                      <BCol cols="12">
+                        <BFormGroup label="Order" label-class="fw-bold">
+                          <BFormInput v-model.number="editForm.order" type="number" required/>
                         </BFormGroup>
                       </BCol>
 
@@ -268,6 +279,12 @@
           </BCol>
 
           <BCol cols="12">
+            <BFormGroup label="Order" label-class="fw-bold">
+              <BFormInput v-model.number="createForm.order" type="number" required />
+            </BFormGroup>
+          </BCol>
+
+          <BCol cols="12">
             <BFormGroup label="Description" label-class="fw-bold">
               <BFormTextarea v-model="createForm.description" rows="2" placeholder="Describe deployment contexts" />
             </BFormGroup>
@@ -387,7 +404,7 @@ const filters = reactive({
   code: [],
   system: [],
   channel: [],
-  sortField: '',
+  sortField: 'order',
   sortOrder: 'asc'
 });
 
@@ -400,7 +417,8 @@ const editForm = reactive({
   description: '',
   subject: '',
   body: '',
-  params: {}
+  params: {},
+  order: 1000,
 });
 
 const createModalOpen = ref(false);
@@ -412,7 +430,8 @@ const createForm = reactive({
   description: '',
   subject: '',
   body: '',
-  params: {}
+  params: {},
+  order: 1000,
 });
 
 // Holds current text input buffer strings for new parameter fields
@@ -454,7 +473,7 @@ const fetchTemplates = async () => {
     const {page, per_page, sortField, sortOrder, ...extraFilters} = filters;
     const requestFilters = {
       ...extraFilters,
-      sort: sortField || undefined,
+      sortBy: sortField || undefined,
       order: sortOrder || undefined
     };
     const data = await templateService.getTemplates(page, per_page, requestFilters);
@@ -466,6 +485,21 @@ const fetchTemplates = async () => {
     loading.value = false;
   }
 };
+
+const sortedTemplates = computed(() => {
+  const templatesArray = Object.entries(templatesMap.value).map(([code, template]) => ({
+    code,
+    ...template
+  }));
+
+  return templatesArray.sort((a, b) => {
+    const field = filters.sortField || 'order';
+    const comparison = field === 'order'
+        ? (a.order ?? 1000) - (b.order ?? 1000)
+        : String(a[field] ?? '').localeCompare(String(b[field] ?? ''));
+    return (filters.sortOrder === 'desc' ? -comparison : comparison) || a.code.localeCompare(b.code);
+  });
+});
 
 const toggleSort = (targetField) => {
   if (filters.sortField === targetField) {
@@ -485,6 +519,7 @@ const toggleEditForm = (template) => {
     editingCode.value = template.code;
     editForm.code = template.code;
     editForm.name = template.name;
+    editForm.order = template.order ?? 1000;
     editForm.description = template.description;
     editForm.subject = template.subject;
     editForm.body = template.body;
@@ -555,6 +590,7 @@ const saveTemplate = async () => {
 const openCreateModal = () => {
   createForm.code = '';
   createForm.name = '';
+  createForm.order = 1000;
   createForm.description = '';
   createForm.subject = '';
   createForm.body = '';

@@ -90,6 +90,10 @@ func (m *Manager) Create(tmpl *dto.Template) (*dto.Template, error) {
 		if existing != nil {
 			return fmt.Errorf("template with code: %s already exists", tmpl.Code)
 		}
+		if tmpl.Order == nil {
+			defaultOrder := 1000
+			tmpl.Order = &defaultOrder
+		}
 
 		return m.repo.Create(ctx, tmpl)
 	})
@@ -115,6 +119,9 @@ func (m *Manager) Update(tmpl *dto.Template) (*dto.Template, error) {
 		}
 		if tmpl.Channels == nil {
 			tmpl.Channels = existing.Channels
+		}
+		if tmpl.Order == nil {
+			tmpl.Order = existing.Order
 		}
 
 		return m.repo.Update(ctx, tmpl)

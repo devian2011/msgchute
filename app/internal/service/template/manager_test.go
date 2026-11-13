@@ -2,6 +2,7 @@ package template
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"testing"
 
@@ -294,4 +295,39 @@ func TestManager_Update(t *testing.T) {
 		repo.AssertExpectations(t)
 		assert.NoError(t, sqlMock.ExpectationsWereMet())
 	})
+}
+
+func TestManager_UpdateOrderCompatibility(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		payload string
+		want    int
+	}{
+		{name: "omitted order keeps stored value", payload: `{"code":"existing_template"}`, want: 42},
+		{name: "explicit zero moves template first", payload: `{"code":"existing_template","order":0}`, want: 0},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var incoming dto.Template
+			require.NoError(t, json.Unmarshal([]byte(tc.payload), &incoming))
+			storedOrder := 42
+			existing := &dto.Template{Code: incoming.Code, Order: &storedOrder}
+			db, sqlMock, err := sqlmock.New()
+			require.NoError(t, err)
+			defer db.Close()
+			repo := new(MockRepo)
+			manager := NewManager(sqlx.NewDb(db, "postgres"), nil, repo)
+			sqlMock.ExpectBegin()
+			repo.On("GetByCode", mock.Anything, incoming.Code).Return(existing, nil).Once()
+			repo.On("Update", mock.Anything, mock.MatchedBy(func(template *dto.Template) bool {
+				return template.Order != nil && *template.Order == tc.want
+			})).Return(nil).Once()
+			sqlMock.ExpectCommit()
+
+			updated, err := manager.Update(&incoming)
+			require.NoError(t, err)
+			require.Equal(t, tc.want, *updated.Order)
+			require.NoError(t, sqlMock.ExpectationsWereMet())
+			repo.AssertExpectations(t)
+		})
+	}
 }
