@@ -40,9 +40,13 @@ func (r *MessageTemplateRepository) Create(ctx context.Context, t *dto.Template)
 	if t.Metadata == nil {
 		t.Metadata = dto.TemplateMetadata{}
 	}
+	order := 1000
+	if t.Order != nil {
+		order = *t.Order
+	}
 	query, args, err := r.builder.Insert(messageTemplatesTable).
-		Columns("code", "name", "description", "params", "subject", "body", "metadata", "systems", "channels").
-		Values(t.Code, t.Name, t.Description, t.Params, t.Subject, t.Body, t.Metadata, t.Systems, t.Channels).
+		Columns("code", "name", "description", "params", "subject", "body", "metadata", "systems", "channels", `"order"`).
+		Values(t.Code, t.Name, t.Description, t.Params, t.Subject, t.Body, t.Metadata, t.Systems, t.Channels, order).
 		ToSql()
 	if err != nil {
 		return fmt.Errorf("build insert query: %w", err)
@@ -57,7 +61,7 @@ func (r *MessageTemplateRepository) Create(ctx context.Context, t *dto.Template)
 }
 
 func (r *MessageTemplateRepository) GetByCode(ctx context.Context, code string) (*dto.Template, error) {
-	query, args, err := r.builder.Select("code", "name", "description", "params", "subject", "body", "metadata", "systems", "channels").
+	query, args, err := r.builder.Select("code", "name", "description", "params", "subject", "body", "metadata", "systems", "channels", `"order"`).
 		From(messageTemplatesTable).
 		Where(squirrel.Eq{"code": code}).
 		Suffix("FOR UPDATE").
@@ -85,6 +89,9 @@ func (r *MessageTemplateRepository) Update(ctx context.Context, t *dto.Template)
 		Set("subject", t.Subject).
 		Set("body", t.Body).
 		Where(squirrel.Eq{"code": t.Code})
+	if t.Order != nil {
+		builder = builder.Set(`"order"`, *t.Order)
+	}
 	if t.Systems != nil {
 		builder = builder.Set("systems", t.Systems)
 	}
@@ -138,7 +145,7 @@ func (r *MessageTemplateRepository) Find(
 	ctx context.Context,
 	filter *dto.MessageTemplateFilter,
 ) (map[string]*dto.Template, uint64, error) {
-	selectBuilder := r.builder.Select("code", "name", "description", "params", "subject", "body", "metadata", "systems", "channels").
+	selectBuilder := r.builder.Select("code", "name", "description", "params", "subject", "body", "metadata", "systems", "channels", `"order"`).
 		From(messageTemplatesTable)
 	countBuilder := r.builder.Select("COUNT(*)").
 		From(messageTemplatesTable)
@@ -189,18 +196,18 @@ func (r *MessageTemplateRepository) Find(
 		selectBuilder = selectBuilder.Offset(filter.Offset)
 	}
 
-	orderClause := "code ASC"
+	orderClause := `"order" ASC, code ASC`
 	if filter.SortField != nil && *filter.SortField != "" {
 		field := strings.ToLower(*filter.SortField)
 		allowed := map[string]bool{
-			"code": true, "name": true, "subject": true,
+			"code": true, "name": true, "subject": true, "order": true,
 		}
 		if allowed[field] {
 			order := "ASC"
 			if filter.SortOrder != nil && strings.ToUpper(*filter.SortOrder) == "DESC" {
 				order = "DESC"
 			}
-			orderClause = fmt.Sprintf("%s %s", field, order)
+			orderClause = fmt.Sprintf("\"%s\" %s, code ASC", field, order)
 		}
 	}
 	selectBuilder = selectBuilder.OrderBy(orderClause)

@@ -67,9 +67,12 @@ func (e *TemplateFinderEndpoint) ServeHTTP(w http.ResponseWriter, r *http.Reques
 	limit, offset := pagination.GetLimitsByPage(page, perPage)
 	respSort := sort.GetSortFromRequest(r)
 
-	// Default respSort.Field == code
+	// Templates default to ascending order without changing the sort defaults for other endpoints.
 	if respSort.Field == "id" {
-		respSort.Field = "code"
+		respSort.Field = "order"
+	}
+	if r.URL.Query().Get("order") == "" {
+		respSort.Order = "ASC"
 	}
 
 	filter := &dto.MessageTemplateFilter{

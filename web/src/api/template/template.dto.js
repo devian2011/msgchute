@@ -6,6 +6,7 @@ export class TemplateDto {
         this.params = data.params || {};
         this.subject = data.subject;
         this.body = data.body;
+        this.order = data.order;
     }
 }
 

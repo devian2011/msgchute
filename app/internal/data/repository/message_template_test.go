@@ -30,10 +30,10 @@ func TestMessageTemplateRepository_Create(t *testing.T) {
 		Body:        "Hello, {{name}}",
 	}
 
-	expectedSQL := "INSERT INTO message_templates (code,name,description,params,subject,body,metadata,systems,channels) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)"
+	expectedSQL := "INSERT INTO message_templates (code,name,description,params,subject,body,metadata,systems,channels,\"order\") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)"
 
 	mock.ExpectExec(expectedSQL).
-		WithArgs(tmpl.Code, tmpl.Name, tmpl.Description, tmpl.Params, tmpl.Subject, tmpl.Body, sqlmock.AnyArg(), tmpl.Systems, tmpl.Channels).
+		WithArgs(tmpl.Code, tmpl.Name, tmpl.Description, tmpl.Params, tmpl.Subject, tmpl.Body, sqlmock.AnyArg(), tmpl.Systems, tmpl.Channels, 1000).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
 	err := repo.Create(ctx, tmpl)
@@ -49,7 +49,7 @@ func TestMessageTemplateRepository_GetByCode(t *testing.T) {
 	ctx := context.Background()
 	code := "welcome_email"
 
-	expectedSQL := "SELECT code, name, description, params, subject, body, metadata, systems, channels FROM message_templates WHERE code = $1 FOR UPDATE"
+	expectedSQL := "SELECT code, name, description, params, subject, body, metadata, systems, channels, \"order\" FROM message_templates WHERE code = $1 FOR UPDATE"
 
 	t.Run("success", func(t *testing.T) {
 		rows := sqlmock.NewRows([]string{"code", "name", "description", "params", "subject", "body"}).
@@ -85,16 +85,18 @@ func TestMessageTemplateRepository_Update(t *testing.T) {
 	repo := NewMessageTemplateRepository(db)
 	ctx := context.Background()
 
+	order := 0
 	tmpl := &dto.Template{
-		Code: "welcome_email",
-		Name: "Updated Name",
+		Code:  "welcome_email",
+		Name:  "Updated Name",
+		Order: &order,
 	}
 
-	expectedSQL := "UPDATE message_templates SET name = $1, description = $2, params = $3, subject = $4, body = $5 WHERE code = $6"
+	expectedSQL := "UPDATE message_templates SET name = $1, description = $2, params = $3, subject = $4, body = $5, \"order\" = $6 WHERE code = $7"
 
 	t.Run("success", func(t *testing.T) {
 		mock.ExpectExec(expectedSQL).
-			WithArgs(tmpl.Name, tmpl.Description, tmpl.Params, tmpl.Subject, tmpl.Body, tmpl.Code).
+			WithArgs(tmpl.Name, tmpl.Description, tmpl.Params, tmpl.Subject, tmpl.Body, *tmpl.Order, tmpl.Code).
 			WillReturnResult(sqlmock.NewResult(0, 1))
 
 		err := repo.Update(ctx, tmpl)
@@ -103,7 +105,7 @@ func TestMessageTemplateRepository_Update(t *testing.T) {
 
 	t.Run("not found", func(t *testing.T) {
 		mock.ExpectExec(expectedSQL).
-			WithArgs(tmpl.Name, tmpl.Description, tmpl.Params, tmpl.Subject, tmpl.Body, tmpl.Code).
+			WithArgs(tmpl.Name, tmpl.Description, tmpl.Params, tmpl.Subject, tmpl.Body, *tmpl.Order, tmpl.Code).
 			WillReturnResult(sqlmock.NewResult(0, 0))
 
 		err := repo.Update(ctx, tmpl)
@@ -172,7 +174,7 @@ func TestMessageTemplateRepository_Find(t *testing.T) {
 			WithArgs("welcome_email", "%test%", "%test%", "%test%").
 			WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(1))
 
-		expectedSelectSQL := "SELECT code, name, description, params, subject, body, metadata, systems, channels FROM message_templates WHERE code IN ($1) AND (name ILIKE $2 OR subject ILIKE $3 OR body ILIKE $4) ORDER BY name DESC LIMIT 10"
+		expectedSelectSQL := "SELECT code, name, description, params, subject, body, metadata, systems, channels, \"order\" FROM message_templates WHERE code IN ($1) AND (name ILIKE $2 OR subject ILIKE $3 OR body ILIKE $4) ORDER BY \"name\" DESC, code ASC LIMIT 10"
 		rows := sqlmock.NewRows([]string{"code", "name", "description", "params", "subject", "body"}).
 			AddRow("welcome_email", "Welcome", "Desc", nil, "Subj", "Body")
 
@@ -197,7 +199,7 @@ func TestMessageTemplateRepository_Find(t *testing.T) {
 		mock.ExpectQuery("SELECT COUNT(*) FROM message_templates").
 			WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(0))
 
-		expectedSelectSQL := "SELECT code, name, description, params, subject, body, metadata, systems, channels FROM message_templates ORDER BY code ASC LIMIT 5"
+		expectedSelectSQL := "SELECT code, name, description, params, subject, body, metadata, systems, channels, \"order\" FROM message_templates ORDER BY \"order\" ASC, code ASC LIMIT 5"
 		mock.ExpectQuery(expectedSelectSQL).
 			WillReturnRows(sqlmock.NewRows([]string{"code", "name", "description", "params", "subject", "body"}))
 
@@ -216,7 +218,7 @@ func TestMessageTemplateRepository_Find(t *testing.T) {
 			WithArgs("code1", "code2").
 			WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(2))
 
-		expectedSelectSQL := "SELECT code, name, description, params, subject, body, metadata, systems, channels FROM message_templates WHERE code IN ($1,$2) ORDER BY code ASC"
+		expectedSelectSQL := "SELECT code, name, description, params, subject, body, metadata, systems, channels, \"order\" FROM message_templates WHERE code IN ($1,$2) ORDER BY \"order\" ASC, code ASC"
 		rows := sqlmock.NewRows([]string{"code", "name", "description", "params", "subject", "body"}).
 			AddRow("code1", "Name1", "Desc1", nil, "Subj1", "Body1").
 			AddRow("code2", "Name2", "Desc2", nil, "Subj2", "Body2")
@@ -258,10 +260,10 @@ func TestMessageTemplateRepository_CreateWithTransaction(t *testing.T) {
 		Body:        "Tx Body",
 	}
 
-	expectedSQL := "INSERT INTO message_templates (code,name,description,params,subject,body,metadata,systems,channels) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)"
+	expectedSQL := "INSERT INTO message_templates (code,name,description,params,subject,body,metadata,systems,channels,\"order\") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)"
 
 	mock.ExpectExec(expectedSQL).
-		WithArgs(tmpl.Code, tmpl.Name, tmpl.Description, tmpl.Params, tmpl.Subject, tmpl.Body, sqlmock.AnyArg(), tmpl.Systems, tmpl.Channels).
+		WithArgs(tmpl.Code, tmpl.Name, tmpl.Description, tmpl.Params, tmpl.Subject, tmpl.Body, sqlmock.AnyArg(), tmpl.Systems, tmpl.Channels, 1000).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
 	err = repo.Create(ctxWithTx, tmpl)
@@ -281,7 +283,7 @@ func TestTemplateSystemAndChannelFilters(t *testing.T) {
 	mock.ExpectQuery("SELECT COUNT(*)"+where).
 		WithArgs([]byte(`["1c"]`), []byte(`["bitrix24"]`), []byte(`["sms"]`)).
 		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(0))
-	mock.ExpectQuery("SELECT code, name, description, params, subject, body, metadata, systems, channels"+where+" ORDER BY code ASC").
+	mock.ExpectQuery("SELECT code, name, description, params, subject, body, metadata, systems, channels, \"order\""+where+" ORDER BY \"order\" ASC, code ASC").
 		WithArgs([]byte(`["1c"]`), []byte(`["bitrix24"]`), []byte(`["sms"]`)).
 		WillReturnRows(sqlmock.NewRows([]string{"code"}))
 	_, _, err := repo.Find(context.Background(), &dto.MessageTemplateFilter{Systems: []string{"1c", "bitrix24"}, Channels: []string{"sms"}})

@@ -29,7 +29,7 @@ func TestPatchMetadataLocksRowAndWritesOnlyAnnotations(t *testing.T) {
 	defer db.Close()
 	wrapped := sqlx.NewDb(db, "sqlmock")
 	manager := NewManager(wrapped, nil, repository.NewMessageTemplateRepository(wrapped))
-	const selectSQL = "SELECT code, name, description, params, subject, body, metadata, systems, channels FROM message_templates WHERE code = $1 FOR UPDATE"
+	const selectSQL = "SELECT code, name, description, params, subject, body, metadata, systems, channels, \"order\" FROM message_templates WHERE code = $1 FOR UPDATE"
 	mock.ExpectBegin()
 	mock.ExpectQuery(selectSQL).WithArgs("order").WillReturnRows(sqlmock.NewRows([]string{"code", "metadata"}).AddRow("order", []byte(`{"1c":{"id":9007199254740993},"bitrix24":{"visible":true}}`)))
 	mock.ExpectExec("UPDATE message_templates SET metadata = $1 WHERE code = $2").WithArgs([]byte(`{"1c":{"id":9007199254740993},"bitrix24":{"visible":false}}`), "order").WillReturnResult(sqlmock.NewResult(0, 1))

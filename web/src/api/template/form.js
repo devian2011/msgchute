@@ -4,6 +4,6 @@ export function splitLabels(value) {
 
 export function templatePayload(form) {
     const {code, name, description, subject, body, params} = form;
-    return {code, name, description, subject, body, params,
+    return {code, name, description, subject, body, params, order: form.order ?? 1000,
         systems: splitLabels(form.systemsRaw), channels: splitLabels(form.channelsRaw)};
 }
